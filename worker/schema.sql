@@ -13,7 +13,8 @@ CREATE TABLE IF NOT EXISTS orders (
   total REAL,
   currency TEXT NOT NULL DEFAULT 'gbp',
   created_at TEXT NOT NULL,
-  paid_at TEXT
+  paid_at TEXT,
+  posted_at TEXT
 );
 
 CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);

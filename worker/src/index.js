@@ -1,11 +1,9 @@
 /**
- * Savourly checkout worker
+ * Savourly checkout worker (public — your website and Stripe talk to it)
  * ------------------------
- * Three routes:
  *   POST /api/create-checkout-session   site -> here: cart -> Stripe Checkout Session (redirect URL back)
  *   POST /api/stripe-webhook            Stripe -> here: marks the matching order "paid"
- *   GET  /orders                        you -> here: password-protected HTML dashboard of every order
- *   GET  /api/orders.json               you -> here: same data as JSON (for exporting / scripts)
+ * Orders are viewed in the separate, Access-protected admin worker (../admin-worker).
  *
  * No Stripe Product/Price objects are ever created — every recipe card + style
  * combination is sent to Stripe as one-off `price_data` at checkout time, so the
@@ -215,68 +213,6 @@ async function handleWebhook(request, env) {
   return json({ received: true });
 }
 
-function checkAuth(request, env) {
-  const auth = request.headers.get('authorization') || '';
-  if (!auth.startsWith('Basic ')) return false;
-  const decoded = atob(auth.slice(6));
-  const [, password] = decoded.split(':');
-  return password === env.ADMIN_PASSWORD;
-}
-
-function unauthorized() {
-  return new Response('Auth required', { status: 401, headers: { 'WWW-Authenticate': 'Basic realm="Savourly orders"' } });
-}
-
-async function fetchOrders(env) {
-  const { results } = await env.DB.prepare(`SELECT * FROM orders ORDER BY created_at DESC LIMIT 500`).all();
-  return results.map((r) => ({ ...r, items: JSON.parse(r.items_json) }));
-}
-
-function escapeHtml(s) {
-  return String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-}
-
-async function handleOrdersPage(env) {
-  const orders = await fetchOrders(env);
-  const rows = orders.map((o) => `
-    <tr>
-      <td>${escapeHtml(o.order_ref)}</td>
-      <td>${escapeHtml(o.created_at?.slice(0, 16).replace('T', ' '))}</td>
-      <td><span class="pill pill-${o.status}">${escapeHtml(o.status)}</span></td>
-      <td>${escapeHtml(o.customer_name)}<br><span class="dim">${escapeHtml(o.customer_email)}</span></td>
-      <td>${escapeHtml(o.shipping_address)}</td>
-      <td>${o.items.map((i) => `${escapeHtml(i.name)}${i.qty > 1 ? ' × ' + i.qty : ''}`).join('<br>')}</td>
-      <td>£${Number(o.total).toFixed(2)}</td>
-      <td>${o.stripe_payment_intent
-        ? `<a href="https://dashboard.stripe.com/test/payments/${encodeURIComponent(o.stripe_payment_intent)}" target="_blank" rel="noopener">${escapeHtml(o.stripe_payment_intent)}</a>`
-        : (o.stripe_session_id ? `<a href="https://dashboard.stripe.com/test/checkout/sessions/${encodeURIComponent(o.stripe_session_id)}" target="_blank" rel="noopener">session</a>` : '—')}</td>
-    </tr>`).join('');
-
-  const html = `<!doctype html><html><head><meta charset="utf-8"><title>Savourly orders</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <style>
-    body{font-family:-apple-system,Segoe UI,Roboto,sans-serif;background:#faf7f0;color:#20293a;padding:24px;}
-    h1{font-size:1.4rem;margin-bottom:4px;}
-    .sub{color:#6b7280;font-size:0.9rem;margin-bottom:20px;}
-    table{width:100%;border-collapse:collapse;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.08);}
-    th,td{padding:10px 12px;text-align:left;font-size:0.85rem;border-bottom:1px solid #eee;vertical-align:top;}
-    th{background:#f3efe6;font-weight:600;}
-    .dim{color:#9ca3af;font-size:0.78rem;}
-    .pill{padding:2px 8px;border-radius:99px;font-size:0.75rem;font-weight:600;}
-    .pill-paid{background:#dcfce7;color:#166534;}
-    .pill-pending{background:#fef3c7;color:#92400e;}
-    .pill-expired,.pill-failed{background:#fee2e2;color:#991b1b;}
-    a{color:#8A5A2B;}
-  </style></head><body>
-  <h1>Savourly orders</h1>
-  <div class="sub">${orders.length} order${orders.length === 1 ? '' : 's'} · newest first · <a href="/api/orders.json">JSON</a></div>
-  <div style="overflow-x:auto"><table><thead><tr><th>Ref</th><th>Date</th><th>Status</th><th>Customer</th><th>Post to</th><th>Items</th><th>Total</th><th>Stripe</th></tr></thead>
-  <tbody>${rows || '<tr><td colspan="8">No orders yet.</td></tr>'}</tbody></table></div>
-  </body></html>`;
-
-  return new Response(html, { headers: { 'content-type': 'text/html;charset=utf-8' } });
-}
-
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -299,15 +235,6 @@ export default {
       }
     }
 
-    if (url.pathname === '/orders' && request.method === 'GET') {
-      if (!checkAuth(request, env)) return unauthorized();
-      return handleOrdersPage(env);
-    }
-
-    if (url.pathname === '/api/orders.json' && request.method === 'GET') {
-      if (!checkAuth(request, env)) return unauthorized();
-      return json(await fetchOrders(env));
-    }
 
     return new Response('Not found', { status: 404 });
   },

@@ -1,5 +1,7 @@
 # Savourly checkout worker
 
+> **Update:** the orders page has moved out of this Worker into `admin-worker/`, a separate Worker locked with Cloudflare Access (email login). This Worker no longer has `/orders` or `/api/orders.json`, and `ADMIN_PASSWORD` is no longer used.
+
 A small Cloudflare Worker that sits between the site and Stripe. It does two jobs:
 
 1. **Takes whatever's in the cart and creates a Stripe Checkout Session for it on the fly** — no
