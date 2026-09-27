@@ -1,0 +1,16 @@
+name = "savourly-checkout"
+main = "src/index.js"
+compatibility_date = "2026-09-01"
+
+# Created with: wrangler d1 create savourly-orders
+# Paste the database_id it prints back in below.
+[[d1_databases]]
+binding = "DB"
+database_name = "savourly-orders"
+database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+
+# Secrets (never put these in this file — set them with `wrangler secret put <NAME>`):
+#   STRIPE_SECRET_KEY      your Stripe secret key (sk_test_... to start)
+#   STRIPE_WEBHOOK_SECRET  the signing secret Stripe gives you for this endpoint (whsec_...)
+#   ADMIN_PASSWORD         password you choose, protects the /orders dashboard
+#   SITE_URL               e.g. https://sheltont-99.github.io/savourly-site  (used for success/cancel redirects & CORS)

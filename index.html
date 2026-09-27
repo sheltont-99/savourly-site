@@ -992,6 +992,10 @@
   attachTypeahead(document.getElementById('chefSearch'), document.getElementById('searchResults'), document.getElementById('navSearch'));
   attachTypeahead(document.getElementById('chefsPageSearch'), document.getElementById('chefsPageResults'), document.getElementById('chefsPageSearchWrap'), filterGrid);
 
+  // Checkout worker: set this once you've deployed it (see /worker/README.md).
+  // Left blank, the site falls back to the old fake "Order confirmed" demo screen.
+  const CHECKOUT_API = ''; // e.g. 'https://savourly-checkout.YOURNAME.workers.dev'
+
   // Cart
   const CART = []; // {name, price, qty}
   const cartCountEl = document.getElementById('cartCount');
@@ -1215,6 +1219,7 @@
       '</div>' +
       '<div class="checkout-field"><label for="checkoutEmail">Email, for delivery updates</label><input type="email" id="checkoutEmail" placeholder="you@example.com" autocomplete="email"></div>' +
 
+      (CHECKOUT_API ? '' :
       '<div class="checkout-section-label">Payment</div>' +
       '<div class="pay-toggle">' +
         '<button type="button" class="pay-option active" id="payCardBtn">Card</button>' +
@@ -1228,11 +1233,13 @@
           '<div class="checkout-field"><label for="ckCvc">CVC</label><input id="ckCvc" placeholder="123" inputmode="numeric" autocomplete="cc-csc"></div>' +
         '</div>' +
       '</div>' +
-      '<div id="payAppleNote" class="apple-note" style="display:none;">You\'ll confirm this payment with Face ID or Touch ID — no card details needed here.</div>' +
+      '<div id="payAppleNote" class="apple-note" style="display:none;">You\'ll confirm this payment with Face ID or Touch ID — no card details needed here.</div>') +
 
       '<div class="checkout-error" id="checkoutError">Fill in your shipping address, email and payment details to continue.</div>' +
       '<button class="checkout-place" id="checkoutPlace" type="button">Pay and post — £' + total.toFixed(2) + '</button>' +
-      '<div class="checkout-demo-note">Demo checkout — no card is charged and nothing is actually posted.</div>';
+      (CHECKOUT_API
+        ? '<div class="checkout-demo-note">You\'ll be taken to Stripe\'s secure payment page to finish paying.</div>'
+        : '<div class="checkout-demo-note">Demo checkout — no card is charged and nothing is actually posted.</div>');
 
     let paymentMethod = 'card';
     const payCardBtn = document.getElementById('payCardBtn');
@@ -1244,31 +1251,67 @@
     function setPaymentMethod(method){
       paymentMethod = method;
       const isCard = method === 'card';
-      payCardBtn.classList.toggle('active', isCard);
-      payAppleBtn.classList.toggle('active', !isCard);
-      payCardFields.style.display = isCard ? 'block' : 'none';
-      payAppleNote.style.display = isCard ? 'none' : 'block';
+      payCardBtn?.classList.toggle('active', isCard);
+      payAppleBtn?.classList.toggle('active', !isCard);
+      if(payCardFields) payCardFields.style.display = isCard ? 'block' : 'none';
+      if(payAppleNote) payAppleNote.style.display = isCard ? 'none' : 'block';
       checkoutPlace.textContent = (isCard ? 'Pay and post — £' : 'Pay with Apple Pay and post — £') + total.toFixed(2);
     }
-    payCardBtn.addEventListener('click', () => setPaymentMethod('card'));
-    payAppleBtn.addEventListener('click', () => setPaymentMethod('apple'));
+    payCardBtn?.addEventListener('click', () => setPaymentMethod('card'));
+    payAppleBtn?.addEventListener('click', () => setPaymentMethod('apple'));
     document.getElementById('checkoutAddBox').addEventListener('click', () => {
       closeCheckout();
       location.hash = '#boxes';
     });
 
-    document.getElementById('checkoutPlace').addEventListener('click', () => {
+    document.getElementById('checkoutPlace').addEventListener('click', async () => {
       const val = id => document.getElementById(id).value.trim();
       const emailInput = document.getElementById('checkoutEmail');
       const errorEl = document.getElementById('checkoutError');
       const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val('checkoutEmail'));
       const shippingFilled = ['ckName','ckAddress','ckCity','ckPostcode'].every(id => val(id).length > 0);
-      const paymentFilled = paymentMethod === 'apple' || ['ckCard','ckExpiry','ckCvc'].every(id => val(id).length > 0);
+      const paymentFilled = paymentMethod === 'apple' || CHECKOUT_API || ['ckCard','ckExpiry','ckCvc'].every(id => val(id).length > 0);
       if(!emailValid || !shippingFilled || !paymentFilled){
         errorEl.classList.add('show');
         (!shippingFilled ? document.getElementById('ckName') : (!emailValid ? emailInput : document.getElementById('ckCard')))?.focus();
         return;
       }
+
+      if(CHECKOUT_API){
+        // Real flow: hand the cart to our worker, which builds a Stripe Checkout
+        // Session on the fly (no per-card product setup needed) and records the
+        // order, then redirect the customer to Stripe's hosted payment page.
+        errorEl.classList.remove('show');
+        checkoutPlace.disabled = true;
+        const originalLabel = checkoutPlace.textContent;
+        checkoutPlace.textContent = 'Redirecting to secure payment…';
+        try{
+          const res = await fetch(CHECKOUT_API + '/api/create-checkout-session', {
+            method: 'POST',
+            headers: {'content-type':'application/json'},
+            body: JSON.stringify({
+              items: CART.map(i => ({name:i.name, price:i.price, qty:i.qty})),
+              postage,
+              customer: {
+                name: val('ckName'),
+                email: val('checkoutEmail'),
+                address: val('ckAddress') + ', ' + val('ckCity') + ' ' + val('ckPostcode')
+              }
+            })
+          });
+          const data = await res.json();
+          if(!res.ok || !data.url) throw new Error(data.error || 'Could not start checkout.');
+          location.href = data.url; // -> Stripe's hosted payment page
+        }catch(err){
+          checkoutPlace.disabled = false;
+          checkoutPlace.textContent = originalLabel;
+          errorEl.textContent = 'Something went wrong starting checkout — please try again.';
+          errorEl.classList.add('show');
+        }
+        return;
+      }
+
+      // Demo fallback (no CHECKOUT_API configured yet) — unchanged mock success screen.
       renderCheckoutSuccess(val('ckName'), val('ckAddress') + ', ' + val('ckCity') + ' ' + val('ckPostcode'), paymentMethod);
       CART.length = 0;
       renderCart();
@@ -1389,7 +1432,27 @@
     if(recipe) openCardFromLink(recipe);
   }
   window.addEventListener('hashchange', route);
-  route();
+
+  // Returning from Stripe after a successful payment: #order-success?ref=SV-XXXX
+  function showOrderReturn(){
+    if(!location.hash.startsWith('#order-success')) return false;
+    const ref = (location.hash.match(/ref=([A-Za-z0-9-]+)/) || [])[1] || '';
+    history.replaceState(null, '', location.pathname + location.search); // clear hash so a refresh doesn't re-show it
+    route();
+    checkoutBody.innerHTML =
+      '<div class="checkout-success">' +
+        '<svg viewBox="0 0 48 48"><circle cx="24" cy="24" r="20"/><path d="M15 24l6 6 12-13"/></svg>' +
+        '<h3>Order confirmed</h3>' +
+        '<p>Thank you — your payment went through and your printed recipe cards are on their way.' +
+        (ref ? '<br>Your order reference is <strong>' + ref + '</strong>.' : '') + '</p>' +
+        '<button class="checkout-place" id="checkoutDone" type="button">Done</button>' +
+      '</div>';
+    document.getElementById('checkoutDone').addEventListener('click', closeCheckout);
+    checkoutOverlay.classList.add('open');
+    return true;
+  }
+  if(!showOrderReturn()) route();
+  window.addEventListener('hashchange', showOrderReturn);
 </script>
 </body>
 </html>
