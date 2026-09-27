@@ -129,13 +129,19 @@ against real money.
 
 ## Products and IDs
 
-Every card and box has a permanent ID in `products.json` at the root of the site (e.g. `AMA-007`,
-`LUC-002`, `BOX-01`). That one file is the master list:
+`products.json` at the root of the site is the **only** place products live. Each entry:
 
-- the website reads it for the prices it shows,
-- the checkout Worker reads it (from `SITE_URL/products.json`) to charge by ID,
-- the admin page reads it for its **Products** tab.
+```json
+{ "id": "LUC-008", "name": "Pumpkin Tortelli", "chef": "Luca Ferretti", "type": "card",
+  "price": 1.99, "description": "…", "photo": "images/LUC-008.jpg", "hidden": false }
+```
 
-To change a price or postage, edit `products.json`. No Worker code changes are needed. A new card needs
-an entry in `products.json` and its card on the site, with the same ID in both.
-IDs should never be reused or renumbered, because past orders refer to them.
+- `id` is permanent. Never change or reuse it, because past orders refer to it.
+- `chef` must match the chef's name exactly; the card appears on that chef's page.
+- Cards appear in the order they're listed in the file.
+- `photo` (optional) is a picture in `images/`; without one, the card gets a drawn icon.
+- `preview` (optional) is the picture shown on the card in the style picker.
+- `hidden: true` removes it from the site and checkout but keeps its ID and sales history.
+
+The website, the checkout Worker (prices) and the admin page (Products tab) all read this file,
+so no Worker code changes are needed to add, hide or re-price products.

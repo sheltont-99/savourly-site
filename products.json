@@ -19,364 +19,418 @@
       "name": "Jollof Rice, Party Style",
       "chef": "Amara Osei",
       "type": "card",
-      "price": 1.99
+      "price": 1.99,
+      "description": "Smoked, deep red, cooked low until the bottom catches — the version she makes for a crowd."
     },
     {
       "id": "AMA-002",
       "name": "Groundnut Soup & Fufu",
       "chef": "Amara Osei",
       "type": "card",
-      "price": 1.99
+      "price": 1.99,
+      "description": "A weeknight version of the Sunday soup, with a shortcut fufu that still pulls right."
     },
     {
       "id": "AMA-003",
       "name": "Kelewele",
       "chef": "Amara Osei",
       "type": "card",
-      "price": 1.99
+      "price": 1.99,
+      "description": "Spiced fried plantain, her grandmother's ratio of ginger to cayenne, no substitutions."
     },
     {
       "id": "AMA-004",
       "name": "Red Red with Fried Plantain",
       "chef": "Amara Osei",
       "type": "card",
-      "price": 1.99
+      "price": 1.99,
+      "description": "Black-eyed peas stewed in palm oil and tomato, finished with a plantain that stays crisp."
     },
     {
       "id": "AMA-005",
       "name": "Waakye, Two Ways",
       "chef": "Amara Osei",
       "type": "card",
-      "price": 1.99
+      "price": 1.99,
+      "description": "The rice-and-beans base plus her two go-to stalls' worth of toppings, scaled for four."
     },
     {
       "id": "AMA-006",
       "name": "Shito, Master Batch",
       "chef": "Amara Osei",
       "type": "card",
-      "price": 1.99
+      "price": 1.99,
+      "description": "The black pepper sauce that goes on everything above — makes a jar that keeps for weeks."
     },
     {
       "id": "AMA-007",
       "name": "Almighty Chicken Pie",
       "chef": "Amara Osei",
       "type": "card",
-      "price": 1.99
+      "price": 1.99,
+      "description": "Chicken, leek and bacon in a tarragon sauce, under a puff pastry lattice — served with Dijon mustard.",
+      "photo": "images/AMA-007.jpg",
+      "preview": "images/AMA-007-card.jpg"
     },
     {
       "id": "LUC-001",
       "name": "Tagliatelle al Ragù",
       "chef": "Luca Ferretti",
       "type": "card",
-      "price": 1.99
+      "price": 1.99,
+      "description": "Four hours, one pot, and the reason Bolognese never has spaghetti in it."
     },
     {
       "id": "LUC-002",
       "name": "Tortellini in Brodo",
       "chef": "Luca Ferretti",
       "type": "card",
-      "price": 1.99
+      "price": 1.99,
+      "description": "Hand-folded tortellini in a clear capon broth — the Christmas Eve standard."
     },
     {
       "id": "LUC-003",
       "name": "Crescentine",
       "chef": "Luca Ferretti",
       "type": "card",
-      "price": 1.99
+      "price": 1.99,
+      "description": "Fried dough puffs for cured meats and soft cheese, ready in twenty minutes."
     },
     {
       "id": "LUC-004",
       "name": "Lasagne Verdi",
       "chef": "Luca Ferretti",
       "type": "card",
-      "price": 1.99
+      "price": 1.99,
+      "description": "Spinach pasta, ragù and béchamel in thin layers, the Bolognese way."
     },
     {
       "id": "LUC-005",
       "name": "Passatelli",
       "chef": "Luca Ferretti",
       "type": "card",
-      "price": 1.99
+      "price": 1.99,
+      "description": "Breadcrumb and Parmigiano noodles pressed straight into hot broth."
     },
     {
       "id": "LUC-006",
       "name": "Torta di Riso",
       "chef": "Luca Ferretti",
       "type": "card",
-      "price": 1.99
+      "price": 1.99,
+      "description": "A set rice pudding cake with almond and lemon, served cold."
     },
     {
       "id": "LUC-007",
       "name": "Friggione",
       "chef": "Luca Ferretti",
       "type": "card",
-      "price": 1.99
+      "price": 1.99,
+      "description": "Onions and tomatoes cooked down for hours into a sweet, soft relish."
     },
     {
       "id": "PRI-001",
       "name": "Fish Molee",
       "chef": "Priya Nair",
       "type": "card",
-      "price": 1.99
+      "price": 1.99,
+      "description": "A gentle coconut curry with turmeric and green chilli, finished with lime."
     },
     {
       "id": "PRI-002",
       "name": "Appam with Vegetable Stew",
       "chef": "Priya Nair",
       "type": "card",
-      "price": 1.99
+      "price": 1.99,
+      "description": "Lacy fermented rice pancakes and the stew that belongs with them."
     },
     {
       "id": "PRI-003",
       "name": "Beef Ularthiyathu",
       "chef": "Priya Nair",
       "type": "card",
-      "price": 1.99
+      "price": 1.99,
+      "description": "Slow-roasted with black pepper and coconut slivers until dark and dry."
     },
     {
       "id": "PRI-004",
       "name": "Kerala Parotta",
       "chef": "Priya Nair",
       "type": "card",
-      "price": 1.99
+      "price": 1.99,
+      "description": "Flaky layered flatbread, stretched thin and crushed hot off the pan."
     },
     {
       "id": "PRI-005",
       "name": "Avial",
       "chef": "Priya Nair",
       "type": "card",
-      "price": 1.99
+      "price": 1.99,
+      "description": "Mixed vegetables in coconut and yoghurt, finished with raw coconut oil."
     },
     {
       "id": "PRI-006",
       "name": "Prawn Theeyal",
       "chef": "Priya Nair",
       "type": "card",
-      "price": 1.99
+      "price": 1.99,
+      "description": "Prawns in a dark sauce of roasted coconut and tamarind."
     },
     {
       "id": "PRI-007",
       "name": "Pal Payasam",
       "chef": "Priya Nair",
       "type": "card",
-      "price": 1.99
+      "price": 1.99,
+      "description": "Rice slow-cooked in milk until pink and fudgy — the festival dessert."
     },
     {
       "id": "SOO-001",
       "name": "Kimchi Jjigae",
       "chef": "Soo-Jin Baek",
       "type": "card",
-      "price": 1.99
+      "price": 1.99,
+      "description": "Well-aged kimchi, pork belly and tofu — the stew for a cold night."
     },
     {
       "id": "SOO-002",
       "name": "Japchae",
       "chef": "Soo-Jin Baek",
       "type": "card",
-      "price": 1.99
+      "price": 1.99,
+      "description": "Glass noodles tossed with vegetables and beef, sesame all the way through."
     },
     {
       "id": "SOO-003",
       "name": "Five Easy Banchan",
       "chef": "Soo-Jin Baek",
       "type": "card",
-      "price": 1.99
+      "price": 1.99,
+      "description": "Five side dishes from one shopping trip, all ready in an hour."
     },
     {
       "id": "SOO-004",
       "name": "Dak Galbi",
       "chef": "Soo-Jin Baek",
       "type": "card",
-      "price": 1.99
+      "price": 1.99,
+      "description": "Spicy stir-fried chicken with cabbage and rice cakes, finished at the table."
     },
     {
       "id": "SOO-005",
       "name": "Doenjang Jjigae",
       "chef": "Soo-Jin Baek",
       "type": "card",
-      "price": 1.99
+      "price": 1.99,
+      "description": "Soybean paste stew with courgette and tofu, the everyday classic."
     },
     {
       "id": "SOO-006",
       "name": "Kimchi, Small Batch",
       "chef": "Soo-Jin Baek",
       "type": "card",
-      "price": 1.99
+      "price": 1.99,
+      "description": "Napa cabbage kimchi in a quantity that fits your fridge."
     },
     {
       "id": "SOO-007",
       "name": "Hotteok",
       "chef": "Soo-Jin Baek",
       "type": "card",
-      "price": 1.99
+      "price": 1.99,
+      "description": "Pan-fried sweet pancakes filled with brown sugar, cinnamon and nuts."
     },
     {
       "id": "MAT-001",
       "name": "Mole Negro",
       "chef": "Mateo Rivas",
       "type": "card",
-      "price": 1.99
+      "price": 1.99,
+      "description": "Twenty-eight ingredients over two days, and worth every one."
     },
     {
       "id": "MAT-002",
       "name": "Tlayudas",
       "chef": "Mateo Rivas",
       "type": "card",
-      "price": 1.99
+      "price": 1.99,
+      "description": "A crisp giant tortilla with asiento, beans and quesillo."
     },
     {
       "id": "MAT-003",
       "name": "Salsa Macha",
       "chef": "Mateo Rivas",
       "type": "card",
-      "price": 1.99
+      "price": 1.99,
+      "description": "A chilli oil crunchy with peanuts and sesame, for putting on everything."
     },
     {
       "id": "MAT-004",
       "name": "Tortillas from Masa",
       "chef": "Mateo Rivas",
       "type": "card",
-      "price": 1.99
+      "price": 1.99,
+      "description": "Fresh masa, the right press, and how to make them puff."
     },
     {
       "id": "MAT-005",
       "name": "Tamales Oaxaqueños",
       "chef": "Mateo Rivas",
       "type": "card",
-      "price": 1.99
+      "price": 1.99,
+      "description": "Chicken and mole wrapped in banana leaves and steamed."
     },
     {
       "id": "MAT-006",
       "name": "Frijoles de Olla",
       "chef": "Mateo Rivas",
       "type": "card",
-      "price": 1.99
+      "price": 1.99,
+      "description": "Pot beans with avocado leaf — the base of half the menu."
     },
     {
       "id": "MAT-007",
       "name": "Chocolate de Agua",
       "chef": "Mateo Rivas",
       "type": "card",
-      "price": 1.99
+      "price": 1.99,
+      "description": "Oaxacan hot chocolate whisked with water until it foams."
     },
     {
       "id": "CAM-001",
       "name": "Coq au Vin",
       "chef": "Camille Aubert",
       "type": "card",
-      "price": 1.99
+      "price": 1.99,
+      "description": "Chicken braised in Burgundy with lardons, mushrooms and pearl onions."
     },
     {
       "id": "CAM-002",
       "name": "Quenelles de Brochet",
       "chef": "Camille Aubert",
       "type": "card",
-      "price": 1.99
+      "price": 1.99,
+      "description": "Lyon's pike dumplings in a Nantua sauce, simplified for home."
     },
     {
       "id": "CAM-003",
       "name": "Tarte Tatin",
       "chef": "Camille Aubert",
       "type": "card",
-      "price": 1.99
+      "price": 1.99,
+      "description": "Caramel taken to the edge, then apples, then pastry, then the flip."
     },
     {
       "id": "CAM-004",
       "name": "Salade Lyonnaise",
       "chef": "Camille Aubert",
       "type": "card",
-      "price": 1.99
+      "price": 1.99,
+      "description": "Frisée, lardons, croutons and a soft poached egg."
     },
     {
       "id": "CAM-005",
       "name": "Gratin Dauphinois",
       "chef": "Camille Aubert",
       "type": "card",
-      "price": 1.99
+      "price": 1.99,
+      "description": "Potatoes baked slowly in cream and garlic, no cheese."
     },
     {
       "id": "CAM-006",
       "name": "Soupe à l'Oignon",
       "chef": "Camille Aubert",
       "type": "card",
-      "price": 1.99
+      "price": 1.99,
+      "description": "Onions cooked for an hour, then broth, bread and Comté."
     },
     {
       "id": "CAM-007",
       "name": "Mousse au Chocolat",
       "chef": "Camille Aubert",
       "type": "card",
-      "price": 1.99
+      "price": 1.99,
+      "description": "Dark chocolate and eggs, nothing else, set overnight."
     },
     {
       "id": "FEM-001",
       "name": "Efo Riro",
       "chef": "Femi Adegoke",
       "type": "card",
-      "price": 1.99
+      "price": 1.99,
+      "description": "Spinach stew with locust beans and assorted meats in a deep red pepper base."
     },
     {
       "id": "FEM-002",
       "name": "Suya Spice & Skewers",
       "chef": "Femi Adegoke",
       "type": "card",
-      "price": 1.99
+      "price": 1.99,
+      "description": "His own yaji blend and how to get the char right on a home grill."
     },
     {
       "id": "FEM-003",
       "name": "Moi Moi",
       "chef": "Femi Adegoke",
       "type": "card",
-      "price": 1.99
+      "price": 1.99,
+      "description": "Steamed bean pudding, silky and savoury, made in foil or tins."
     },
     {
       "id": "FEM-004",
       "name": "Jollof, Lagos Style",
       "chef": "Femi Adegoke",
       "type": "card",
-      "price": 1.99
+      "price": 1.99,
+      "description": "Long-grain rice cooked in a fried tomato and pepper base."
     },
     {
       "id": "FEM-005",
       "name": "Egusi Soup",
       "chef": "Femi Adegoke",
       "type": "card",
-      "price": 1.99
+      "price": 1.99,
+      "description": "Ground melon seed soup with bitter leaf and smoked fish."
     },
     {
       "id": "FEM-006",
       "name": "Puff-Puff",
       "chef": "Femi Adegoke",
       "type": "card",
-      "price": 1.99
+      "price": 1.99,
+      "description": "Fried sweet dough balls — soft inside, a crisp shell outside."
     },
     {
       "id": "FEM-007",
       "name": "Ofada Stew",
       "chef": "Femi Adegoke",
       "type": "card",
-      "price": 1.99
+      "price": 1.99,
+      "description": "A green pepper stew with locust beans and palm oil."
     },
     {
       "id": "BOX-01",
       "name": "Starter Box",
       "chef": null,
       "type": "box",
-      "price": 12.0
+      "price": 12.0,
+      "description": "Three recipe cards from three different chefs — a taste of the platform before you settle on one kitchen."
     },
     {
       "id": "BOX-02",
       "name": "Chef's Choice Box",
       "chef": null,
       "type": "box",
-      "price": 18.0
+      "price": 18.0,
+      "description": "Five cards curated by one chef around a theme — a weeknight menu, a Sunday spread, a dinner for two."
     },
     {
       "id": "BOX-03",
       "name": "Collector's Box",
       "chef": null,
       "type": "box",
-      "price": 29.0
+      "price": 29.0,
+      "description": "Eight cards plus a keepsake tin to hold them in — the full Savourly set, wrapped as a gift."
     }
   ]
 }

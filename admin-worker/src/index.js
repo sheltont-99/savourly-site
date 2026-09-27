@@ -120,6 +120,7 @@ function shell(view, c, body) {
   .prow{display:grid;grid-template-columns:auto 1fr auto auto;gap:12px;align-items:center;padding:10px 16px;border-top:1px solid #f1ede4;font-size:.92rem}
   .prow .sold{color:#6b7280;font-size:.82rem;min-width:52px;text-align:right}
   .prow .sold b{color:#166534}
+  .hid{font-size:.72rem;font-weight:600;background:#f3f4f6;color:#6b7280;border-radius:99px;padding:2px 8px;margin-left:6px}
   /* Orders views: wide, one thin row per order on bigger screens */
   .v-orders main{max-width:1280px}
   @media (min-width:900px){
@@ -159,7 +160,7 @@ async function productsPage(env) {
   const body = `<input class="search" id="q" placeholder="Search by ID, recipe or chef…" autocomplete="off">` +
     Object.entries(groups).map(([chef, list]) => `<section class="group"><h2>${escapeHtml(chef)}</h2>` +
       list.map((p) => `<div class="prow" data-q="${escapeHtml(`${p.id} ${p.name} ${chef}`.toLowerCase())}">
-        <code class="pid">${escapeHtml(p.id)}</code><span>${escapeHtml(p.name)}</span><span>£${Number(p.price).toFixed(2)}</span>
+        <code class="pid">${escapeHtml(p.id)}</code><span>${escapeHtml(p.name)}${p.hidden ? ' <span class="hid">Hidden</span>' : ''}</span><span>£${Number(p.price).toFixed(2)}</span>
         <span class="sold">${sold[p.id] ? `<b>${sold[p.id]} sold</b>` : '0 sold'}</span></div>`).join('') +
       `</section>`).join('') +
     `<script>

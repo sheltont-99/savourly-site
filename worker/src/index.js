@@ -96,7 +96,8 @@ async function handleCreateCheckoutSession(request, env) {
   const catalog = await loadCatalog(env);
   const items = [];
   for (const i of rawItems) {
-    const p = catalog.byId[i?.id];
+    const found = catalog.byId[i?.id];
+    const p = found && !found.hidden ? found : null; // hidden products can't be bought
     const qty = Number(i?.qty);
     const styleOk = p && (catalog.styles[p.type] || []).includes(i?.style);
     if (!p || !styleOk || !Number.isInteger(qty) || qty < 1 || qty > MAX_QTY_PER_LINE) {
