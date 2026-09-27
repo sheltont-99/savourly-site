@@ -8,6 +8,77 @@
 // Your master product list, published with the website.
 const PRODUCTS_URL = 'https://sheltont-99.github.io/savourly-site/products.json';
 
+// With a GITHUB_TOKEN secret, the Products tab reads/writes products.json in the repo directly,
+// so the "On site" tick boxes can hide/unhide products. Without it, the tab is read-only.
+const REPO = 'sheltont-99/savourly-site';
+const FILE = 'products.json';
+
+function b64ToUtf8(b64) {
+  const bin = atob(b64.replace(/\n/g, ''));
+  return new TextDecoder().decode(Uint8Array.from(bin, (c) => c.charCodeAt(0)));
+}
+function utf8ToB64(str) {
+  const bytes = new TextEncoder().encode(str);
+  let bin = '';
+  for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  return btoa(bin);
+}
+async function github(env, path, init = {}) {
+  return fetch(`https://api.github.com/repos/${REPO}/${path}`, {
+    ...init,
+    headers: {
+      Authorization: `Bearer ${env.GITHUB_TOKEN}`,
+      Accept: 'application/vnd.github+json',
+      'User-Agent': 'savourly-admin',
+      ...(init.body ? { 'content-type': 'application/json' } : {}),
+    },
+  });
+}
+// Returns { cat, sha } — sha is null when read from the public site instead of GitHub.
+async function loadCatalog(env) {
+  if (env.GITHUB_TOKEN) {
+    const res = await github(env, `contents/${FILE}?ref=main`);
+    if (res.ok) {
+      const j = await res.json();
+      return { cat: JSON.parse(b64ToUtf8(j.content)), sha: j.sha };
+    }
+  }
+  const res = await fetch(PRODUCTS_URL, { cf: { cacheTtl: 60, cacheEverything: true } });
+  if (!res.ok) throw new Error('Could not load the product list');
+  return { cat: await res.json(), sha: null };
+}
+
+async function setVisibility(request, env) {
+  const origin = request.headers.get('origin');
+  if (origin && origin !== new URL(request.url).origin) return new Response('Forbidden', { status: 403 });
+  if (!env.GITHUB_TOKEN) return Response.json({ error: 'No GITHUB_TOKEN secret set on savourly-admin.' }, { status: 400 });
+  const { id, visible } = await request.json();
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const { cat, sha } = await loadCatalog(env);
+    if (!sha) return Response.json({ error: 'Could not read products.json from GitHub — check the token.' }, { status: 502 });
+    const p = cat.products.find((x) => x.id === id);
+    if (!p) return Response.json({ error: `No product ${id}` }, { status: 404 });
+    if (!!p.hidden === !visible) return Response.json({ ok: true, unchanged: true });
+    if (visible) delete p.hidden; else p.hidden = true;
+    const res = await github(env, `contents/${FILE}`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        message: `${visible ? 'Show' : 'Hide'} ${id} ${p.name} (from order log)`,
+        content: utf8ToB64(JSON.stringify(cat, null, 2) + '\n'),
+        sha,
+        branch: 'main',
+      }),
+    });
+    if (res.ok) return Response.json({ ok: true });
+    if (res.status !== 409) {
+      const e = await res.json().catch(() => ({}));
+      return Response.json({ error: e.message || `GitHub said ${res.status}` }, { status: 502 });
+    }
+    // 409 = someone else changed the file a moment ago; reload and try once more
+  }
+  return Response.json({ error: 'The product list changed at the same time — please try again.' }, { status: 409 });
+}
+
 function escapeHtml(s) {
   return String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
@@ -117,9 +188,14 @@ function shell(view, c, body) {
   .search{width:100%;font:inherit;font-size:16px;padding:11px 14px;border:1px solid #e5dfd2;border-radius:10px;background:#fff}
   .group{background:#fff;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.07);overflow:hidden}
   .group h2{font-size:.95rem;margin:0;padding:12px 16px;background:#f7f3ea}
-  .prow{display:grid;grid-template-columns:auto 1fr auto auto;gap:12px;align-items:center;padding:10px 16px;border-top:1px solid #f1ede4;font-size:.92rem}
+  .prow{display:grid;grid-template-columns:auto auto 1fr auto auto;gap:12px;align-items:center;padding:10px 16px;border-top:1px solid #f1ede4;font-size:.92rem}
   .prow .sold{color:#6b7280;font-size:.82rem;min-width:52px;text-align:right}
   .prow .sold b{color:#166534}
+  .live{display:flex;align-items:center;cursor:pointer}
+  .live input{width:20px;height:20px;accent-color:#B8862B;cursor:pointer;margin:0}
+  .prow.is-hidden > span,.prow.is-hidden .pid{opacity:.55}
+  .prow.saving{opacity:.5}
+  .hint{margin:0;color:#6b7280;font-size:.85rem}
   .hid{font-size:.72rem;font-weight:600;background:#f3f4f6;color:#6b7280;border-radius:99px;padding:2px 8px;margin-left:6px}
   /* Orders views: wide, one thin row per order on bigger screens */
   .v-orders main{max-width:1280px}
@@ -142,24 +218,29 @@ function shell(view, c, body) {
 }
 
 async function productsPage(env) {
-  const [catRes, c, soldRes] = await Promise.all([
-    fetch(PRODUCTS_URL, { cf: { cacheTtl: 60, cacheEverything: true } }),
+  const [catResult, c, soldRes] = await Promise.all([
+    loadCatalog(env).catch(() => null),
     counts(env),
     env.DB.prepare(
       `SELECT json_extract(j.value,'$.id') AS id, SUM(json_extract(j.value,'$.qty')) AS sold
        FROM orders o, json_each(o.items_json) j WHERE o.status='paid' GROUP BY 1`
     ).all(),
   ]);
-  if (!catRes.ok) return shell('products', c, '<div class="empty">Could not load the product list.</div>');
-  const cat = await catRes.json();
+  if (!catResult) return shell('products', c, '<div class="empty">Could not load the product list.</div>');
+  const { cat, sha } = catResult;
+  const editable = !!sha;
   const sold = Object.fromEntries(soldRes.results.filter((r) => r.id).map((r) => [r.id, r.sold]));
   c.products = cat.products.length;
 
   const groups = {};
   cat.products.forEach((p) => { (groups[p.chef || 'Recipe boxes'] ||= []).push(p); });
-  const body = `<input class="search" id="q" placeholder="Search by ID, recipe or chef…" autocomplete="off">` +
+  const body = `<input class="search" id="q" placeholder="Search by ID, recipe or chef…" autocomplete="off">
+    <p class="hint">${editable
+      ? '<b>On site</b>: ticked products show on the website. Untick to hide one — the site updates within about 2 minutes.'
+      : 'Tick boxes are read-only until a <b>GITHUB_TOKEN</b> secret is added to savourly-admin.'}</p>` +
     Object.entries(groups).map(([chef, list]) => `<section class="group"><h2>${escapeHtml(chef)}</h2>` +
-      list.map((p) => `<div class="prow" data-q="${escapeHtml(`${p.id} ${p.name} ${chef}`.toLowerCase())}">
+      list.map((p) => `<div class="prow${p.hidden ? ' is-hidden' : ''}" data-q="${escapeHtml(`${p.id} ${p.name} ${chef}`.toLowerCase())}">
+        <label class="live" title="Show on website"><input type="checkbox" data-id="${escapeHtml(p.id)}" ${p.hidden ? '' : 'checked'} ${editable ? '' : 'disabled'}></label>
         <code class="pid">${escapeHtml(p.id)}</code><span>${escapeHtml(p.name)}${p.hidden ? ' <span class="hid">Hidden</span>' : ''}</span><span>£${Number(p.price).toFixed(2)}</span>
         <span class="sold">${sold[p.id] ? `<b>${sold[p.id]} sold</b>` : '0 sold'}</span></div>`).join('') +
       `</section>`).join('') +
@@ -170,6 +251,22 @@ async function productsPage(env) {
         document.querySelectorAll('.prow').forEach(r => r.style.display = r.dataset.q.includes(v) ? '' : 'none');
         document.querySelectorAll('.group').forEach(g => g.style.display = [...g.querySelectorAll('.prow')].some(r => r.style.display !== 'none') ? '' : 'none');
       });
+      document.querySelectorAll('.live input').forEach(box => box.addEventListener('change', async () => {
+        const row = box.closest('.prow'), visible = box.checked;
+        box.disabled = true; row.classList.add('saving');
+        try {
+          const res = await fetch('/visibility', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id: box.dataset.id, visible }) });
+          const out = await res.json().catch(() => ({}));
+          if (!res.ok) throw new Error(out.error || 'Save failed');
+          row.classList.toggle('is-hidden', !visible);
+          const tag = row.querySelector('.hid');
+          if (!visible && !tag) row.children[2].insertAdjacentHTML('beforeend', ' <span class="hid">Hidden</span>');
+          if (visible && tag) tag.remove();
+        } catch (e) {
+          box.checked = !visible;
+          alert('Could not update ' + box.dataset.id + ': ' + e.message);
+        } finally { box.disabled = false; row.classList.remove('saving'); }
+      }));
     </script>`;
   return shell('products', c, body);
 }
@@ -196,6 +293,7 @@ export default {
     const url = new URL(request.url);
     if (request.method === 'POST' && url.pathname === '/post') return setPosted(request, env, true);
     if (request.method === 'POST' && url.pathname === '/unpost') return setPosted(request, env, false);
+    if (request.method === 'POST' && url.pathname === '/visibility') return setVisibility(request, env);
     if (request.method === 'GET' && url.pathname === '/') {
       const view = url.searchParams.get('view') || 'topost';
       return view === 'products' ? productsPage(env) : page(env, view);
