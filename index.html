@@ -484,8 +484,13 @@
   .bundle h3{font-size:1.25rem;}
   .bundle p{color:var(--cream-dim);margin-top:6px;font-size:0.92rem;max-width:48ch;}
 
-  footer{padding:40px 28px;border-top:1px solid rgba(32,41,58,0.08);
-    display:flex;justify-content:space-between;color:var(--cream-dim);font-size:0.85rem;flex-wrap:wrap;gap:12px;}
+  footer{padding:40px 28px;border-top:1px solid rgba(32,41,58,0.08);color:var(--cream-dim);font-size:0.85rem;}
+  .footer-links{display:flex;gap:24px;flex-wrap:wrap;margin-bottom:18px;}
+  .footer-links a{color:var(--cream-dim);text-decoration:none;}
+  .footer-links a:hover{color:var(--cream);text-decoration:underline;}
+  .footer-bottom{display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;}
+  .contact-page{padding:76px 28px 96px;}
+  body:not([data-page="contact"]) .contact-page{display:none;}
 
   @media (max-width:820px){
     .hero-inner{grid-template-columns:1fr;}
@@ -803,9 +808,23 @@
   </div>
 </section>
 
+<section class="contact-page" id="contactPage">
+  <div class="wrap">
+    <h1 style="font-family:'Fraunces',serif;font-size:clamp(2.2rem,4.5vw,3.2rem);line-height:1.1;letter-spacing:-0.01em;color:var(--cream);">Contact Us and Returns (Holder)</h1>
+    <p style="color:var(--cream-dim);margin-top:16px;max-width:60ch;line-height:1.6;">This page is a placeholder — content to come.</p>
+  </div>
+</section>
+
 <footer>
-  <div><span id="footerName">© 2026 Amara Osei</span>. Mock-up for demonstration.</div>
-  <div>Instagram · Newsletter · Contact</div>
+  <div class="footer-links">
+    <a href="#">About</a>
+    <a href="#contact">Contact Us</a>
+    <a href="#contact">Refunds and Returns</a>
+  </div>
+  <div class="footer-bottom">
+    <div><span id="footerName">© 2026 Amara Osei</span>. Mock-up for demonstration.</div>
+    <div>Instagram · Newsletter · Contact</div>
+  </div>
 </footer>
 
 <div class="product-overlay" id="productOverlay">
@@ -1353,6 +1372,7 @@
     if(productOverlay.classList.contains('open')){ productOverlay.classList.remove('open'); cardBaseHash = null; }
     if(hash === '#chefs') page = 'chefs';
     else if(hash === '#boxes') page = 'boxes';
+    else if(hash === '#contact') page = 'contact';
     else if(hash.startsWith('#card/')){ page = 'amara'; recipe = hash.slice(6); }
     else if(hash.startsWith('#chef/')){
       const bits = hash.slice(6).split('/');
@@ -1363,7 +1383,7 @@
     document.body.dataset.page = page;
     if(page === 'chef') renderProfile(chef, idx);
     const who = page === 'amara' ? 'Amara Osei' : (chef ? chef.name : null);
-    document.title = page === 'chefs' ? 'All Chefs — Savourly' : page === 'boxes' ? 'Recipe Boxes — Savourly' : page === 'landing' ? 'About — Savourly' : who + ' — Recipe Cards';
+    document.title = page === 'chefs' ? 'All Chefs — Savourly' : page === 'boxes' ? 'Recipe Boxes — Savourly' : page === 'contact' ? 'Contact Us and Returns — Savourly' : page === 'landing' ? 'About — Savourly' : who + ' — Recipe Cards';
     document.getElementById('footerName').textContent = '© 2026 ' + (who || 'Savourly');
     window.scrollTo(0,0);
     if(recipe) openCardFromLink(recipe);
