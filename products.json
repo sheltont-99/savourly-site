@@ -15,7 +15,7 @@
   },
   "products": [
     {
-      "id": "AMA-001",
+      "id": "PR00001",
       "name": "Jollof Rice, Party Style",
       "chef": "Amara Osei",
       "type": "card",
@@ -23,7 +23,7 @@
       "description": "Smoked, deep red, cooked low until the bottom catches — the version she makes for a crowd."
     },
     {
-      "id": "AMA-002",
+      "id": "PR00002",
       "name": "Groundnut Soup & Fufu",
       "chef": "Amara Osei",
       "type": "card",
@@ -31,7 +31,7 @@
       "description": "A weeknight version of the Sunday soup, with a shortcut fufu that still pulls right."
     },
     {
-      "id": "AMA-003",
+      "id": "PR00003",
       "name": "Kelewele",
       "chef": "Amara Osei",
       "type": "card",
@@ -39,7 +39,7 @@
       "description": "Spiced fried plantain, her grandmother's ratio of ginger to cayenne, no substitutions."
     },
     {
-      "id": "AMA-004",
+      "id": "PR00004",
       "name": "Red Red with Fried Plantain",
       "chef": "Amara Osei",
       "type": "card",
@@ -47,7 +47,7 @@
       "description": "Black-eyed peas stewed in palm oil and tomato, finished with a plantain that stays crisp."
     },
     {
-      "id": "AMA-005",
+      "id": "PR00005",
       "name": "Waakye, Two Ways",
       "chef": "Amara Osei",
       "type": "card",
@@ -55,7 +55,7 @@
       "description": "The rice-and-beans base plus her two go-to stalls' worth of toppings, scaled for four."
     },
     {
-      "id": "AMA-006",
+      "id": "PR00006",
       "name": "Shito, Master Batch",
       "chef": "Amara Osei",
       "type": "card",
@@ -63,17 +63,17 @@
       "description": "The black pepper sauce that goes on everything above — makes a jar that keeps for weeks."
     },
     {
-      "id": "AMA-007",
+      "id": "PR00007",
       "name": "Almighty Chicken Pie",
       "chef": "Amara Osei",
       "type": "card",
       "price": 1.99,
       "description": "Chicken, leek and bacon in a tarragon sauce, under a puff pastry lattice — served with Dijon mustard.",
-      "photo": "images/AMA-007.jpg",
-      "preview": "images/AMA-007-card.jpg"
+      "photo": "images/PR00007.jpg",
+      "preview": "images/PR00007-card.jpg"
     },
     {
-      "id": "LUC-001",
+      "id": "PR00008",
       "name": "Tagliatelle al Ragù",
       "chef": "Luca Ferretti",
       "type": "card",
@@ -81,7 +81,7 @@
       "description": "Four hours, one pot, and the reason Bolognese never has spaghetti in it."
     },
     {
-      "id": "LUC-002",
+      "id": "PR00009",
       "name": "Tortellini in Brodo",
       "chef": "Luca Ferretti",
       "type": "card",
@@ -89,7 +89,7 @@
       "description": "Hand-folded tortellini in a clear capon broth — the Christmas Eve standard."
     },
     {
-      "id": "LUC-003",
+      "id": "PR00010",
       "name": "Crescentine",
       "chef": "Luca Ferretti",
       "type": "card",
@@ -97,7 +97,7 @@
       "description": "Fried dough puffs for cured meats and soft cheese, ready in twenty minutes."
     },
     {
-      "id": "LUC-004",
+      "id": "PR00011",
       "name": "Lasagne Verdi",
       "chef": "Luca Ferretti",
       "type": "card",
@@ -105,7 +105,7 @@
       "description": "Spinach pasta, ragù and béchamel in thin layers, the Bolognese way."
     },
     {
-      "id": "LUC-005",
+      "id": "PR00012",
       "name": "Passatelli",
       "chef": "Luca Ferretti",
       "type": "card",
@@ -113,7 +113,7 @@
       "description": "Breadcrumb and Parmigiano noodles pressed straight into hot broth."
     },
     {
-      "id": "LUC-006",
+      "id": "PR00013",
       "name": "Torta di Riso",
       "chef": "Luca Ferretti",
       "type": "card",
@@ -121,7 +121,7 @@
       "description": "A set rice pudding cake with almond and lemon, served cold."
     },
     {
-      "id": "LUC-007",
+      "id": "PR00014",
       "name": "Friggione",
       "chef": "Luca Ferretti",
       "type": "card",
@@ -129,7 +129,7 @@
       "description": "Onions and tomatoes cooked down for hours into a sweet, soft relish."
     },
     {
-      "id": "PRI-001",
+      "id": "PR00015",
       "name": "Fish Molee",
       "chef": "Priya Nair",
       "type": "card",
@@ -137,7 +137,7 @@
       "description": "A gentle coconut curry with turmeric and green chilli, finished with lime."
     },
     {
-      "id": "PRI-002",
+      "id": "PR00016",
       "name": "Appam with Vegetable Stew",
       "chef": "Priya Nair",
       "type": "card",
@@ -145,7 +145,7 @@
       "description": "Lacy fermented rice pancakes and the stew that belongs with them."
     },
     {
-      "id": "PRI-003",
+      "id": "PR00017",
       "name": "Beef Ularthiyathu",
       "chef": "Priya Nair",
       "type": "card",
@@ -153,7 +153,7 @@
       "description": "Slow-roasted with black pepper and coconut slivers until dark and dry."
     },
     {
-      "id": "PRI-004",
+      "id": "PR00018",
       "name": "Kerala Parotta",
       "chef": "Priya Nair",
       "type": "card",
@@ -161,7 +161,7 @@
       "description": "Flaky layered flatbread, stretched thin and crushed hot off the pan."
     },
     {
-      "id": "PRI-005",
+      "id": "PR00019",
       "name": "Avial",
       "chef": "Priya Nair",
       "type": "card",
@@ -169,7 +169,7 @@
       "description": "Mixed vegetables in coconut and yoghurt, finished with raw coconut oil."
     },
     {
-      "id": "PRI-006",
+      "id": "PR00020",
       "name": "Prawn Theeyal",
       "chef": "Priya Nair",
       "type": "card",
@@ -177,7 +177,7 @@
       "description": "Prawns in a dark sauce of roasted coconut and tamarind."
     },
     {
-      "id": "PRI-007",
+      "id": "PR00021",
       "name": "Pal Payasam",
       "chef": "Priya Nair",
       "type": "card",
@@ -185,7 +185,7 @@
       "description": "Rice slow-cooked in milk until pink and fudgy — the festival dessert."
     },
     {
-      "id": "SOO-001",
+      "id": "PR00022",
       "name": "Kimchi Jjigae",
       "chef": "Soo-Jin Baek",
       "type": "card",
@@ -193,7 +193,7 @@
       "description": "Well-aged kimchi, pork belly and tofu — the stew for a cold night."
     },
     {
-      "id": "SOO-002",
+      "id": "PR00023",
       "name": "Japchae",
       "chef": "Soo-Jin Baek",
       "type": "card",
@@ -201,7 +201,7 @@
       "description": "Glass noodles tossed with vegetables and beef, sesame all the way through."
     },
     {
-      "id": "SOO-003",
+      "id": "PR00024",
       "name": "Five Easy Banchan",
       "chef": "Soo-Jin Baek",
       "type": "card",
@@ -209,7 +209,7 @@
       "description": "Five side dishes from one shopping trip, all ready in an hour."
     },
     {
-      "id": "SOO-004",
+      "id": "PR00025",
       "name": "Dak Galbi",
       "chef": "Soo-Jin Baek",
       "type": "card",
@@ -217,7 +217,7 @@
       "description": "Spicy stir-fried chicken with cabbage and rice cakes, finished at the table."
     },
     {
-      "id": "SOO-005",
+      "id": "PR00026",
       "name": "Doenjang Jjigae",
       "chef": "Soo-Jin Baek",
       "type": "card",
@@ -225,7 +225,7 @@
       "description": "Soybean paste stew with courgette and tofu, the everyday classic."
     },
     {
-      "id": "SOO-006",
+      "id": "PR00027",
       "name": "Kimchi, Small Batch",
       "chef": "Soo-Jin Baek",
       "type": "card",
@@ -233,7 +233,7 @@
       "description": "Napa cabbage kimchi in a quantity that fits your fridge."
     },
     {
-      "id": "SOO-007",
+      "id": "PR00028",
       "name": "Hotteok",
       "chef": "Soo-Jin Baek",
       "type": "card",
@@ -241,7 +241,7 @@
       "description": "Pan-fried sweet pancakes filled with brown sugar, cinnamon and nuts."
     },
     {
-      "id": "MAT-001",
+      "id": "PR00029",
       "name": "Mole Negro",
       "chef": "Mateo Rivas",
       "type": "card",
@@ -249,7 +249,7 @@
       "description": "Twenty-eight ingredients over two days, and worth every one."
     },
     {
-      "id": "MAT-002",
+      "id": "PR00030",
       "name": "Tlayudas",
       "chef": "Mateo Rivas",
       "type": "card",
@@ -257,7 +257,7 @@
       "description": "A crisp giant tortilla with asiento, beans and quesillo."
     },
     {
-      "id": "MAT-003",
+      "id": "PR00031",
       "name": "Salsa Macha",
       "chef": "Mateo Rivas",
       "type": "card",
@@ -265,7 +265,7 @@
       "description": "A chilli oil crunchy with peanuts and sesame, for putting on everything."
     },
     {
-      "id": "MAT-004",
+      "id": "PR00032",
       "name": "Tortillas from Masa",
       "chef": "Mateo Rivas",
       "type": "card",
@@ -273,7 +273,7 @@
       "description": "Fresh masa, the right press, and how to make them puff."
     },
     {
-      "id": "MAT-005",
+      "id": "PR00033",
       "name": "Tamales Oaxaqueños",
       "chef": "Mateo Rivas",
       "type": "card",
@@ -281,7 +281,7 @@
       "description": "Chicken and mole wrapped in banana leaves and steamed."
     },
     {
-      "id": "MAT-006",
+      "id": "PR00034",
       "name": "Frijoles de Olla",
       "chef": "Mateo Rivas",
       "type": "card",
@@ -289,7 +289,7 @@
       "description": "Pot beans with avocado leaf — the base of half the menu."
     },
     {
-      "id": "MAT-007",
+      "id": "PR00035",
       "name": "Chocolate de Agua",
       "chef": "Mateo Rivas",
       "type": "card",
@@ -297,7 +297,7 @@
       "description": "Oaxacan hot chocolate whisked with water until it foams."
     },
     {
-      "id": "CAM-001",
+      "id": "PR00036",
       "name": "Coq au Vin",
       "chef": "Camille Aubert",
       "type": "card",
@@ -305,7 +305,7 @@
       "description": "Chicken braised in Burgundy with lardons, mushrooms and pearl onions."
     },
     {
-      "id": "CAM-002",
+      "id": "PR00037",
       "name": "Quenelles de Brochet",
       "chef": "Camille Aubert",
       "type": "card",
@@ -313,7 +313,7 @@
       "description": "Lyon's pike dumplings in a Nantua sauce, simplified for home."
     },
     {
-      "id": "CAM-003",
+      "id": "PR00038",
       "name": "Tarte Tatin",
       "chef": "Camille Aubert",
       "type": "card",
@@ -321,7 +321,7 @@
       "description": "Caramel taken to the edge, then apples, then pastry, then the flip."
     },
     {
-      "id": "CAM-004",
+      "id": "PR00039",
       "name": "Salade Lyonnaise",
       "chef": "Camille Aubert",
       "type": "card",
@@ -329,7 +329,7 @@
       "description": "Frisée, lardons, croutons and a soft poached egg."
     },
     {
-      "id": "CAM-005",
+      "id": "PR00040",
       "name": "Gratin Dauphinois",
       "chef": "Camille Aubert",
       "type": "card",
@@ -337,7 +337,7 @@
       "description": "Potatoes baked slowly in cream and garlic, no cheese."
     },
     {
-      "id": "CAM-006",
+      "id": "PR00041",
       "name": "Soupe à l'Oignon",
       "chef": "Camille Aubert",
       "type": "card",
@@ -345,7 +345,7 @@
       "description": "Onions cooked for an hour, then broth, bread and Comté."
     },
     {
-      "id": "CAM-007",
+      "id": "PR00042",
       "name": "Mousse au Chocolat",
       "chef": "Camille Aubert",
       "type": "card",
@@ -353,7 +353,7 @@
       "description": "Dark chocolate and eggs, nothing else, set overnight."
     },
     {
-      "id": "FEM-001",
+      "id": "PR00043",
       "name": "Efo Riro",
       "chef": "Femi Adegoke",
       "type": "card",
@@ -361,7 +361,7 @@
       "description": "Spinach stew with locust beans and assorted meats in a deep red pepper base."
     },
     {
-      "id": "FEM-002",
+      "id": "PR00044",
       "name": "Suya Spice & Skewers",
       "chef": "Femi Adegoke",
       "type": "card",
@@ -369,7 +369,7 @@
       "description": "His own yaji blend and how to get the char right on a home grill."
     },
     {
-      "id": "FEM-003",
+      "id": "PR00045",
       "name": "Moi Moi",
       "chef": "Femi Adegoke",
       "type": "card",
@@ -377,7 +377,7 @@
       "description": "Steamed bean pudding, silky and savoury, made in foil or tins."
     },
     {
-      "id": "FEM-004",
+      "id": "PR00046",
       "name": "Jollof, Lagos Style",
       "chef": "Femi Adegoke",
       "type": "card",
@@ -385,7 +385,7 @@
       "description": "Long-grain rice cooked in a fried tomato and pepper base."
     },
     {
-      "id": "FEM-005",
+      "id": "PR00047",
       "name": "Egusi Soup",
       "chef": "Femi Adegoke",
       "type": "card",
@@ -393,7 +393,7 @@
       "description": "Ground melon seed soup with bitter leaf and smoked fish."
     },
     {
-      "id": "FEM-006",
+      "id": "PR00048",
       "name": "Puff-Puff",
       "chef": "Femi Adegoke",
       "type": "card",
@@ -401,7 +401,7 @@
       "description": "Fried sweet dough balls — soft inside, a crisp shell outside."
     },
     {
-      "id": "FEM-007",
+      "id": "PR00049",
       "name": "Ofada Stew",
       "chef": "Femi Adegoke",
       "type": "card",
@@ -409,7 +409,7 @@
       "description": "A green pepper stew with locust beans and palm oil."
     },
     {
-      "id": "BOX-01",
+      "id": "PR00050",
       "name": "Starter Box",
       "chef": null,
       "type": "box",
@@ -417,7 +417,7 @@
       "description": "Three recipe cards from three different chefs — a taste of the platform before you settle on one kitchen."
     },
     {
-      "id": "BOX-02",
+      "id": "PR00051",
       "name": "Chef's Choice Box",
       "chef": null,
       "type": "box",
@@ -425,7 +425,7 @@
       "description": "Five cards curated by one chef around a theme — a weeknight menu, a Sunday spread, a dinner for two."
     },
     {
-      "id": "BOX-03",
+      "id": "PR00052",
       "name": "Collector's Box",
       "chef": null,
       "type": "box",

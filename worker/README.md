@@ -132,8 +132,8 @@ against real money.
 `products.json` at the root of the site is the **only** place products live. Each entry:
 
 ```json
-{ "id": "LUC-008", "name": "Pumpkin Tortelli", "chef": "Luca Ferretti", "type": "card",
-  "price": 1.99, "description": "…", "photo": "images/LUC-008.jpg", "hidden": false }
+{ "id": "PR00053", "name": "Pumpkin Tortelli", "chef": "Luca Ferretti", "type": "card",
+  "price": 1.99, "description": "…", "photo": "images/PR00053.jpg", "hidden": false }
 ```
 
 - `id` is permanent. Never change or reuse it, because past orders refer to it.

@@ -704,7 +704,7 @@
       </div>
     </div>
     <div class="grid">
-      <div class="card c1" data-price="12.00" data-box="starter-box" data-id="BOX-01">
+      <div class="card c1" data-price="12.00" data-box="starter-box" data-id="PR00050">
         <div class="card-art"><span class="num">01</span>
           <svg viewBox="0 0 64 64"><rect x="14" y="26" width="36" height="24" rx="2"/><path d="M14 34h36"/><path d="M32 26v24"/><path d="M24 26c-4-6 2-12 8-6 6-6 12 0 8 6"/></svg>
         </div>
@@ -714,7 +714,7 @@
           <div class="card-foot"><span class="price">£12.00</span><span class="view-cta">Choose style →</span></div>
         </div>
       </div>
-      <div class="card c3" data-price="18.00" data-box="chefs-choice-box" data-id="BOX-02">
+      <div class="card c3" data-price="18.00" data-box="chefs-choice-box" data-id="PR00051">
         <div class="card-art"><span class="num">02</span>
           <svg viewBox="0 0 64 64"><rect x="14" y="26" width="36" height="24" rx="2"/><path d="M14 34h36"/><path d="M32 26v24"/><path d="M24 26c-4-6 2-12 8-6 6-6 12 0 8 6"/></svg>
         </div>
@@ -724,7 +724,7 @@
           <div class="card-foot"><span class="price">£18.00</span><span class="view-cta">Choose style →</span></div>
         </div>
       </div>
-      <div class="card c5" data-price="29.00" data-box="collectors-box" data-id="BOX-03">
+      <div class="card c5" data-price="29.00" data-box="collectors-box" data-id="PR00052">
         <div class="card-art"><span class="num">03</span>
           <svg viewBox="0 0 64 64"><rect x="14" y="26" width="36" height="24" rx="2"/><path d="M14 34h36"/><path d="M32 26v24"/><path d="M24 26c-4-6 2-12 8-6 6-6 12 0 8 6"/></svg>
         </div>
@@ -780,33 +780,33 @@
 
 <script>
   const CHEFS = [
-    {name:"Amara Osei", code:"AMA", cuisine:"Ghanaian, Accra / London", handbuilt:true},
-    {name:"Luca Ferretti", code:"LUC", cuisine:"Northern Italian, Bologna", role:"Pasta maker & cook", pron:"his",
+    {name:"Amara Osei", cuisine:"Ghanaian, Accra / London", handbuilt:true},
+    {name:"Luca Ferretti", cuisine:"Northern Italian, Bologna", role:"Pasta maker & cook", pron:"his",
       bio:"Luca Ferretti ran a trattoria kitchen in Bologna for eleven years before going back to the food of his nonna's table. Each card below is a single recipe, tested for a home stove and written the way he'd explain it to you at the pasta board.",
       aboutH:"Emilian cooking, one fold at a time.",
       aboutP:["Luca learned to roll sfoglia before he could see over the table, then spent a decade cooking in trattorie across Emilia-Romagna, noting the details — the exact thinness of the dough, how long the ragù really needs — that never make it into a cookbook.","Every card is one dish, one method, written in full. Pick the one you want to cook this weekend."],
       stats:[["38","recipe cards published"],["15 yrs","professional kitchens"],["2","cookbooks in progress"]], total:38, bundle:79},
-    {name:"Priya Nair", code:"PRI", cuisine:"Keralan, Kochi", role:"Chef & spice specialist", pron:"her",
+    {name:"Priya Nair", cuisine:"Keralan, Kochi", role:"Chef & spice specialist", pron:"her",
       bio:"Priya Nair cooked in hotel kitchens across India before returning to the food of the Kerala coast. Each card below is a single recipe, tested for a home stove and written the way she'd explain it to you in her kitchen.",
       aboutH:"Coconut, curry leaf and the art of the tempering.",
       aboutP:["Priya trained in Mumbai and Chennai, then spent two years cooking with family and friends from Kochi to Kozhikode, writing down the small decisions — when the mustard seeds are ready, how dark to take the shallots — that make Keralan food taste right.","Every card is one dish, one method, written in full. Buy what you want to cook this week."],
       stats:[["41","recipe cards published"],["10 yrs","professional kitchens"],["1","cookbook in progress"]], total:41, bundle:82},
-    {name:"Soo-Jin Baek", code:"SOO", cuisine:"Korean home cooking, Seoul", role:"Home cook & teacher", pron:"her",
+    {name:"Soo-Jin Baek", cuisine:"Korean home cooking, Seoul", role:"Home cook & teacher", pron:"her",
       bio:"Soo-Jin Baek taught cooking classes in Seoul for years before writing down the dishes her mother made every day. Each card below is a single recipe, tested for a home stove and written the way she'd explain it to you in her kitchen.",
       aboutH:"Korean home cooking, from one well-stocked pantry.",
       aboutP:["Soo-Jin grew up cooking beside her mother and grandmother, then spent years teaching, and learned where home cooks go wrong — the ferment, the heat of the pan, the balance of the seasoning — so her cards are written to steer you past it.","Every card is one dish, one method, written in full. Buy what you want to cook this week."],
       stats:[["52","recipe cards published"],["9 yrs","teaching classes"],["2","cookbooks in progress"]], total:52, bundle:95},
-    {name:"Mateo Rivas", code:"MAT", cuisine:"Oaxacan, Mexico City", role:"Chef & mole obsessive", pron:"his",
+    {name:"Mateo Rivas", cuisine:"Oaxacan, Mexico City", role:"Chef & mole obsessive", pron:"his",
       bio:"Mateo Rivas cooked in Mexico City restaurants for a decade before going back to the Oaxacan food he grew up on. Each card below is a single recipe, tested for a home stove and written the way he'd explain it to you at his comal.",
       aboutH:"Oaxacan cooking, split into steps you can manage.",
       aboutP:["Mateo grew up between Oaxaca's markets and his family's comal, then cooked in Mexico City, turning long dishes — moles, masa, salsas that take a morning — into steps that fit around a normal week.","Every card is one dish, one method, written in full. Buy what you want to cook this week."],
       stats:[["44","recipe cards published"],["12 yrs","professional kitchens"],["3","cookbooks in progress"]], total:44, bundle:85},
-    {name:"Camille Aubert", code:"CAM", cuisine:"French bistro, Lyon", role:"Bistro chef", pron:"her",
+    {name:"Camille Aubert", cuisine:"French bistro, Lyon", role:"Bistro chef", pron:"her",
       bio:"Camille Aubert ran a Lyonnais bouchon for a decade before turning its menu into recipes for home cooks. Each card below is a single recipe, tested for a home stove and written the way she'd explain it to you in her kitchen.",
       aboutH:"Bistro cooking, with the key technique in each dish.",
       aboutP:["Camille trained in Lyon and ran her own bouchon for ten years, and every dish she teaches hangs on one technique — the emulsion, the caramel, the patient braise — that her cards explain in full before anything else.","Every card is one dish, one method, written in full. Buy what you want to cook this week."],
       stats:[["49","recipe cards published"],["18 yrs","professional kitchens"],["1","cookbook in progress"]], total:49, bundle:92},
-    {name:"Femi Adegoke", code:"FEM", cuisine:"Nigerian, Lagos", role:"Chef & recipe developer", pron:"his",
+    {name:"Femi Adegoke", cuisine:"Nigerian, Lagos", role:"Chef & recipe developer", pron:"his",
       bio:"Femi Adegoke cooked in Lagos and London kitchens before coming back to the Yoruba dishes of his grandmother's village. Each card below is a single recipe, tested for a home stove and written the way he'd explain it to you in his kitchen.",
       aboutH:"Nigerian cooking, down to the smoke in the pepper base.",
       aboutP:["Femi trained in London, then spent two years cooking between Lagos, Ibadan and Abeokuta, recording the details — how long to fry the pepper base, when to add the iru — that decide how a stew turns out.","Every card is one dish, one method, written in full. Buy what you want to cook this week."],
