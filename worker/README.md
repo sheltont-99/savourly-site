@@ -126,3 +126,16 @@ When you're ready to take real payments:
 
 Nothing else changes — the same worker, database and `/orders` page keep working, just now
 against real money.
+
+## Products and IDs
+
+Every card and box has a permanent ID in `products.json` at the root of the site (e.g. `AMA-007`,
+`LUC-002`, `BOX-01`). That one file is the master list:
+
+- the website reads it for the prices it shows,
+- the checkout Worker reads it (from `SITE_URL/products.json`) to charge by ID,
+- the admin page reads it for its **Products** tab.
+
+To change a price or postage, edit `products.json`. No Worker code changes are needed. A new card needs
+an entry in `products.json` and its card on the site, with the same ID in both.
+IDs should never be reused or renumbered, because past orders refer to them.

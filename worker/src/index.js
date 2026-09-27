@@ -30,33 +30,22 @@ function corsPreflight() {
   });
 }
 
-// ---- Pricing is decided HERE, never trusted from the browser ----
-// The browser only tells us *what* is in the cart; anyone can edit that request,
-// so every price is looked up server-side. Keep these in step with index.html.
-const PRICING = {
-  currency: 'gbp',
-  postage: 1.49,
-  card: { price: 1.99, styles: ['Classic', 'Funky', 'Fine Dining'] },
-  box: {
-    styles: ['Kraft Wrap', 'Gift Ribbon', 'Keepsake Tin'],
-    prices: { 'Starter Box': 12.00, "Chef's Choice Box": 18.00, "Collector's Box": 29.00 },
-  },
-  maxQtyPerLine: 50,
-};
-
-// Cart item names look like "Kelewele — Funky" or "Starter Box — Gift Ribbon".
-// Returns the trusted server-side unit price, or null if the item isn't valid.
-function priceFor(name) {
-  if (typeof name !== 'string') return null;
-  const sep = name.lastIndexOf(' — ');
-  if (sep < 1) return null;
-  const base = name.slice(0, sep).trim();
-  const style = name.slice(sep + 3).trim();
-  if (base in PRICING.box.prices) {
-    return PRICING.box.styles.includes(style) ? PRICING.box.prices[base] : null;
-  }
-  return PRICING.card.styles.includes(style) && base.length <= 120 ? PRICING.card.price : null;
+// ---- Prices come from your master product list, never from the browser ----
+// The browser only says *which* product IDs and styles are in the cart. Every
+// price is looked up in products.json on your own site (cached for a minute).
+async function loadCatalog(env) {
+  const siteUrl = env.SITE_URL.replace(/\/$/, '');
+  const res = await fetch(`${siteUrl}/products.json`, { cf: { cacheTtl: 60, cacheEverything: true } });
+  if (!res.ok) throw new Error('Could not load product list');
+  const data = await res.json();
+  return {
+    postage: data.postage,
+    styles: data.styles,
+    byId: Object.fromEntries(data.products.map((p) => [p.id, p])),
+  };
 }
+
+const MAX_QTY_PER_LINE = 50;
 
 function orderRef() {
   const rand = crypto.randomUUID().split('-')[0];
@@ -103,18 +92,20 @@ async function handleCreateCheckoutSession(request, env) {
   const customer = body.customer || {};
   if (rawItems.length === 0 || rawItems.length > 100) return json({ error: 'Cart is empty or too large.' }, 400);
 
-  // Rebuild every line with a trusted price; reject anything unrecognised.
+  // Rebuild every line from the product list; reject anything unrecognised.
+  const catalog = await loadCatalog(env);
   const items = [];
   for (const i of rawItems) {
-    const price = priceFor(i?.name);
+    const p = catalog.byId[i?.id];
     const qty = Number(i?.qty);
-    if (price === null || !Number.isInteger(qty) || qty < 1 || qty > PRICING.maxQtyPerLine) {
-      return json({ error: `Unrecognised cart item: ${String(i?.name).slice(0, 80)}` }, 400);
+    const styleOk = p && (catalog.styles[p.type] || []).includes(i?.style);
+    if (!p || !styleOk || !Number.isInteger(qty) || qty < 1 || qty > MAX_QTY_PER_LINE) {
+      return json({ error: `Unrecognised cart item: ${String(i?.id).slice(0, 40)}` }, 400);
     }
-    items.push({ name: i.name, price, qty });
+    items.push({ id: p.id, name: p.name, style: i.style, chef: p.chef || null, price: p.price, qty });
   }
 
-  const postage = PRICING.postage;
+  const postage = catalog.postage;
   const subtotal = items.reduce((s, i) => s + i.price * i.qty, 0);
   const total = subtotal + postage;
   const ref = orderRef();
@@ -123,7 +114,7 @@ async function handleCreateCheckoutSession(request, env) {
     price_data: {
       currency: 'gbp',
       unit_amount: Math.round(i.price * 100),
-      product_data: { name: i.name }, // <- this is what you'll see against the payment in Stripe
+      product_data: { name: `${i.id} · ${i.name} — ${i.style}` }, // what you see against the payment in Stripe
     },
     quantity: i.qty,
   }));

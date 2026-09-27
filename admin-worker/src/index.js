@@ -5,6 +5,9 @@
  * Needs one binding: DB -> savourly-orders.
  */
 
+// Your master product list, published with the website.
+const PRODUCTS_URL = 'https://sheltont-99.github.io/savourly-site/products.json';
+
 function escapeHtml(s) {
   return String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
@@ -57,15 +60,22 @@ async function page(env, view) {
 
     return `<article class="order">
       <div class="top"><strong>${escapeHtml(o.order_ref)}</strong><span class="dim">${escapeHtml(fmtDate(o.created_at))}</span>${badge}</div>
-      <ul class="items">${items.map((i) => `<li><span>${escapeHtml(i.name)}</span><b>× ${Number(i.qty)}</b></li>`).join('')}</ul>
+      <ul class="items">${items.map((i) => `<li><span>${i.id ? `<code class="pid">${escapeHtml(i.id)}</code>` : ''}${escapeHtml(i.style ? `${i.name} — ${i.style}` : i.name)}</span><b>× ${Number(i.qty)}</b></li>`).join('')}</ul>
       <div class="addr"><b>${escapeHtml(o.customer_name)}</b><br>${escapeHtml(o.shipping_address)}<br><span class="dim">${escapeHtml(o.customer_email)}</span></div>
       <div class="foot"><span class="total">£${Number(o.total).toFixed(2)}</span>${stripe}${action}</div>
     </article>`;
   }).join('');
 
-  const tab = (key) => `<a class="tab ${view === key ? 'on' : ''}" href="/?view=${key}">${VIEWS[key].label} <span>${c[key === 'all' ? 'all' : key]}</span></a>`;
   const empty = view === 'topost' ? 'Nothing waiting to be posted. 🎉' : 'No orders here yet.';
+  return shell(view, c, cards || `<div class="empty">${empty}</div>`);
+}
 
+function tabs(view, c) {
+  const t = (key, label, n) => `<a class="tab ${view === key ? 'on' : ''}" href="/?view=${key}">${label}${n == null ? '' : ` <span>${n}</span>`}</a>`;
+  return t('topost', 'To post', c.topost) + t('posted', 'Posted', c.posted) + t('all', 'All', c.all) + t('products', 'Products', c.products);
+}
+
+function shell(view, c, body) {
   return new Response(`<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -88,6 +98,8 @@ async function page(env, view) {
   .dim{color:#9ca3af;font-size:.82rem}
   .items{list-style:none;margin:12px 0;padding:0;border-top:1px solid #f1ede4}
   .items li{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid #f1ede4;font-size:.95rem}
+  .items li b{white-space:nowrap}
+  @media (max-width:480px){.tabs{gap:2px}.tab{padding:9px 9px;font-size:.84rem}.tab span{padding:1px 6px;margin-left:3px}}
   .addr{font-size:.92rem;line-height:1.45}
   .foot{display:flex;align-items:center;gap:14px;margin-top:12px;flex-wrap:wrap}
   .foot form{margin-left:auto}
@@ -101,10 +113,50 @@ async function page(env, view) {
   .pill-posted{background:#dcfce7;color:#166534}
   .pill-pending,.pill-expired{background:#f3f4f6;color:#6b7280}
   .empty{text-align:center;color:#9ca3af;padding:48px 0}
+  .pid{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.8rem;background:#f3efe6;color:#8A5A2B;border-radius:5px;padding:2px 6px;margin-right:8px;white-space:nowrap}
+  .search{width:100%;font:inherit;font-size:16px;padding:11px 14px;border:1px solid #e5dfd2;border-radius:10px;background:#fff}
+  .group{background:#fff;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.07);overflow:hidden}
+  .group h2{font-size:.95rem;margin:0;padding:12px 16px;background:#f7f3ea}
+  .prow{display:grid;grid-template-columns:auto 1fr auto auto;gap:12px;align-items:center;padding:10px 16px;border-top:1px solid #f1ede4;font-size:.92rem}
+  .prow .sold{color:#6b7280;font-size:.82rem;min-width:52px;text-align:right}
+  .prow .sold b{color:#166534}
 </style></head><body>
-<header><h1>Savourly orders</h1><nav class="tabs">${tab('topost')}${tab('posted')}${tab('all')}</nav></header>
-<main>${cards || `<div class="empty">${empty}</div>`}</main>
+<header><h1>Savourly orders</h1><nav class="tabs">${tabs(view, c)}</nav></header>
+<main>${body}</main>
 </body></html>`, { headers: { 'content-type': 'text/html;charset=utf-8', 'cache-control': 'no-store' } });
+}
+
+async function productsPage(env) {
+  const [catRes, c, soldRes] = await Promise.all([
+    fetch(PRODUCTS_URL, { cf: { cacheTtl: 60, cacheEverything: true } }),
+    counts(env),
+    env.DB.prepare(
+      `SELECT json_extract(j.value,'$.id') AS id, SUM(json_extract(j.value,'$.qty')) AS sold
+       FROM orders o, json_each(o.items_json) j WHERE o.status='paid' GROUP BY 1`
+    ).all(),
+  ]);
+  if (!catRes.ok) return shell('products', c, '<div class="empty">Could not load the product list.</div>');
+  const cat = await catRes.json();
+  const sold = Object.fromEntries(soldRes.results.filter((r) => r.id).map((r) => [r.id, r.sold]));
+  c.products = cat.products.length;
+
+  const groups = {};
+  cat.products.forEach((p) => { (groups[p.chef || 'Recipe boxes'] ||= []).push(p); });
+  const body = `<input class="search" id="q" placeholder="Search by ID, recipe or chef…" autocomplete="off">` +
+    Object.entries(groups).map(([chef, list]) => `<section class="group"><h2>${escapeHtml(chef)}</h2>` +
+      list.map((p) => `<div class="prow" data-q="${escapeHtml(`${p.id} ${p.name} ${chef}`.toLowerCase())}">
+        <code class="pid">${escapeHtml(p.id)}</code><span>${escapeHtml(p.name)}</span><span>£${Number(p.price).toFixed(2)}</span>
+        <span class="sold">${sold[p.id] ? `<b>${sold[p.id]} sold</b>` : '0 sold'}</span></div>`).join('') +
+      `</section>`).join('') +
+    `<script>
+      const q = document.getElementById('q');
+      q.addEventListener('input', () => {
+        const v = q.value.trim().toLowerCase();
+        document.querySelectorAll('.prow').forEach(r => r.style.display = r.dataset.q.includes(v) ? '' : 'none');
+        document.querySelectorAll('.group').forEach(g => g.style.display = [...g.querySelectorAll('.prow')].some(r => r.style.display !== 'none') ? '' : 'none');
+      });
+    </script>`;
+  return shell('products', c, body);
 }
 
 async function setPosted(request, env, posted) {
@@ -129,7 +181,10 @@ export default {
     const url = new URL(request.url);
     if (request.method === 'POST' && url.pathname === '/post') return setPosted(request, env, true);
     if (request.method === 'POST' && url.pathname === '/unpost') return setPosted(request, env, false);
-    if (request.method === 'GET' && url.pathname === '/') return page(env, url.searchParams.get('view') || 'topost');
+    if (request.method === 'GET' && url.pathname === '/') {
+      const view = url.searchParams.get('view') || 'topost';
+      return view === 'products' ? productsPage(env) : page(env, view);
+    }
     return new Response('Not found', { status: 404 });
   },
 };

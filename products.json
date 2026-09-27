@@ -1,0 +1,382 @@
+{
+  "currency": "gbp",
+  "postage": 1.49,
+  "styles": {
+    "card": [
+      "Classic",
+      "Funky",
+      "Fine Dining"
+    ],
+    "box": [
+      "Kraft Wrap",
+      "Gift Ribbon",
+      "Keepsake Tin"
+    ]
+  },
+  "products": [
+    {
+      "id": "AMA-001",
+      "name": "Jollof Rice, Party Style",
+      "chef": "Amara Osei",
+      "type": "card",
+      "price": 1.99
+    },
+    {
+      "id": "AMA-002",
+      "name": "Groundnut Soup & Fufu",
+      "chef": "Amara Osei",
+      "type": "card",
+      "price": 1.99
+    },
+    {
+      "id": "AMA-003",
+      "name": "Kelewele",
+      "chef": "Amara Osei",
+      "type": "card",
+      "price": 1.99
+    },
+    {
+      "id": "AMA-004",
+      "name": "Red Red with Fried Plantain",
+      "chef": "Amara Osei",
+      "type": "card",
+      "price": 1.99
+    },
+    {
+      "id": "AMA-005",
+      "name": "Waakye, Two Ways",
+      "chef": "Amara Osei",
+      "type": "card",
+      "price": 1.99
+    },
+    {
+      "id": "AMA-006",
+      "name": "Shito, Master Batch",
+      "chef": "Amara Osei",
+      "type": "card",
+      "price": 1.99
+    },
+    {
+      "id": "AMA-007",
+      "name": "Almighty Chicken Pie",
+      "chef": "Amara Osei",
+      "type": "card",
+      "price": 1.99
+    },
+    {
+      "id": "LUC-001",
+      "name": "Tagliatelle al Ragù",
+      "chef": "Luca Ferretti",
+      "type": "card",
+      "price": 1.99
+    },
+    {
+      "id": "LUC-002",
+      "name": "Tortellini in Brodo",
+      "chef": "Luca Ferretti",
+      "type": "card",
+      "price": 1.99
+    },
+    {
+      "id": "LUC-003",
+      "name": "Crescentine",
+      "chef": "Luca Ferretti",
+      "type": "card",
+      "price": 1.99
+    },
+    {
+      "id": "LUC-004",
+      "name": "Lasagne Verdi",
+      "chef": "Luca Ferretti",
+      "type": "card",
+      "price": 1.99
+    },
+    {
+      "id": "LUC-005",
+      "name": "Passatelli",
+      "chef": "Luca Ferretti",
+      "type": "card",
+      "price": 1.99
+    },
+    {
+      "id": "LUC-006",
+      "name": "Torta di Riso",
+      "chef": "Luca Ferretti",
+      "type": "card",
+      "price": 1.99
+    },
+    {
+      "id": "LUC-007",
+      "name": "Friggione",
+      "chef": "Luca Ferretti",
+      "type": "card",
+      "price": 1.99
+    },
+    {
+      "id": "PRI-001",
+      "name": "Fish Molee",
+      "chef": "Priya Nair",
+      "type": "card",
+      "price": 1.99
+    },
+    {
+      "id": "PRI-002",
+      "name": "Appam with Vegetable Stew",
+      "chef": "Priya Nair",
+      "type": "card",
+      "price": 1.99
+    },
+    {
+      "id": "PRI-003",
+      "name": "Beef Ularthiyathu",
+      "chef": "Priya Nair",
+      "type": "card",
+      "price": 1.99
+    },
+    {
+      "id": "PRI-004",
+      "name": "Kerala Parotta",
+      "chef": "Priya Nair",
+      "type": "card",
+      "price": 1.99
+    },
+    {
+      "id": "PRI-005",
+      "name": "Avial",
+      "chef": "Priya Nair",
+      "type": "card",
+      "price": 1.99
+    },
+    {
+      "id": "PRI-006",
+      "name": "Prawn Theeyal",
+      "chef": "Priya Nair",
+      "type": "card",
+      "price": 1.99
+    },
+    {
+      "id": "PRI-007",
+      "name": "Pal Payasam",
+      "chef": "Priya Nair",
+      "type": "card",
+      "price": 1.99
+    },
+    {
+      "id": "SOO-001",
+      "name": "Kimchi Jjigae",
+      "chef": "Soo-Jin Baek",
+      "type": "card",
+      "price": 1.99
+    },
+    {
+      "id": "SOO-002",
+      "name": "Japchae",
+      "chef": "Soo-Jin Baek",
+      "type": "card",
+      "price": 1.99
+    },
+    {
+      "id": "SOO-003",
+      "name": "Five Easy Banchan",
+      "chef": "Soo-Jin Baek",
+      "type": "card",
+      "price": 1.99
+    },
+    {
+      "id": "SOO-004",
+      "name": "Dak Galbi",
+      "chef": "Soo-Jin Baek",
+      "type": "card",
+      "price": 1.99
+    },
+    {
+      "id": "SOO-005",
+      "name": "Doenjang Jjigae",
+      "chef": "Soo-Jin Baek",
+      "type": "card",
+      "price": 1.99
+    },
+    {
+      "id": "SOO-006",
+      "name": "Kimchi, Small Batch",
+      "chef": "Soo-Jin Baek",
+      "type": "card",
+      "price": 1.99
+    },
+    {
+      "id": "SOO-007",
+      "name": "Hotteok",
+      "chef": "Soo-Jin Baek",
+      "type": "card",
+      "price": 1.99
+    },
+    {
+      "id": "MAT-001",
+      "name": "Mole Negro",
+      "chef": "Mateo Rivas",
+      "type": "card",
+      "price": 1.99
+    },
+    {
+      "id": "MAT-002",
+      "name": "Tlayudas",
+      "chef": "Mateo Rivas",
+      "type": "card",
+      "price": 1.99
+    },
+    {
+      "id": "MAT-003",
+      "name": "Salsa Macha",
+      "chef": "Mateo Rivas",
+      "type": "card",
+      "price": 1.99
+    },
+    {
+      "id": "MAT-004",
+      "name": "Tortillas from Masa",
+      "chef": "Mateo Rivas",
+      "type": "card",
+      "price": 1.99
+    },
+    {
+      "id": "MAT-005",
+      "name": "Tamales Oaxaqueños",
+      "chef": "Mateo Rivas",
+      "type": "card",
+      "price": 1.99
+    },
+    {
+      "id": "MAT-006",
+      "name": "Frijoles de Olla",
+      "chef": "Mateo Rivas",
+      "type": "card",
+      "price": 1.99
+    },
+    {
+      "id": "MAT-007",
+      "name": "Chocolate de Agua",
+      "chef": "Mateo Rivas",
+      "type": "card",
+      "price": 1.99
+    },
+    {
+      "id": "CAM-001",
+      "name": "Coq au Vin",
+      "chef": "Camille Aubert",
+      "type": "card",
+      "price": 1.99
+    },
+    {
+      "id": "CAM-002",
+      "name": "Quenelles de Brochet",
+      "chef": "Camille Aubert",
+      "type": "card",
+      "price": 1.99
+    },
+    {
+      "id": "CAM-003",
+      "name": "Tarte Tatin",
+      "chef": "Camille Aubert",
+      "type": "card",
+      "price": 1.99
+    },
+    {
+      "id": "CAM-004",
+      "name": "Salade Lyonnaise",
+      "chef": "Camille Aubert",
+      "type": "card",
+      "price": 1.99
+    },
+    {
+      "id": "CAM-005",
+      "name": "Gratin Dauphinois",
+      "chef": "Camille Aubert",
+      "type": "card",
+      "price": 1.99
+    },
+    {
+      "id": "CAM-006",
+      "name": "Soupe à l'Oignon",
+      "chef": "Camille Aubert",
+      "type": "card",
+      "price": 1.99
+    },
+    {
+      "id": "CAM-007",
+      "name": "Mousse au Chocolat",
+      "chef": "Camille Aubert",
+      "type": "card",
+      "price": 1.99
+    },
+    {
+      "id": "FEM-001",
+      "name": "Efo Riro",
+      "chef": "Femi Adegoke",
+      "type": "card",
+      "price": 1.99
+    },
+    {
+      "id": "FEM-002",
+      "name": "Suya Spice & Skewers",
+      "chef": "Femi Adegoke",
+      "type": "card",
+      "price": 1.99
+    },
+    {
+      "id": "FEM-003",
+      "name": "Moi Moi",
+      "chef": "Femi Adegoke",
+      "type": "card",
+      "price": 1.99
+    },
+    {
+      "id": "FEM-004",
+      "name": "Jollof, Lagos Style",
+      "chef": "Femi Adegoke",
+      "type": "card",
+      "price": 1.99
+    },
+    {
+      "id": "FEM-005",
+      "name": "Egusi Soup",
+      "chef": "Femi Adegoke",
+      "type": "card",
+      "price": 1.99
+    },
+    {
+      "id": "FEM-006",
+      "name": "Puff-Puff",
+      "chef": "Femi Adegoke",
+      "type": "card",
+      "price": 1.99
+    },
+    {
+      "id": "FEM-007",
+      "name": "Ofada Stew",
+      "chef": "Femi Adegoke",
+      "type": "card",
+      "price": 1.99
+    },
+    {
+      "id": "BOX-01",
+      "name": "Starter Box",
+      "chef": null,
+      "type": "box",
+      "price": 12.0
+    },
+    {
+      "id": "BOX-02",
+      "name": "Chef's Choice Box",
+      "chef": null,
+      "type": "box",
+      "price": 18.0
+    },
+    {
+      "id": "BOX-03",
+      "name": "Collector's Box",
+      "chef": null,
+      "type": "box",
+      "price": 29.0
+    }
+  ]
+}
