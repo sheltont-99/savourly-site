@@ -120,7 +120,21 @@ function shell(view, c, body) {
   .prow{display:grid;grid-template-columns:auto 1fr auto auto;gap:12px;align-items:center;padding:10px 16px;border-top:1px solid #f1ede4;font-size:.92rem}
   .prow .sold{color:#6b7280;font-size:.82rem;min-width:52px;text-align:right}
   .prow .sold b{color:#166534}
-</style></head><body>
+  /* Orders views: wide, one thin row per order on bigger screens */
+  .v-orders main{max-width:1280px}
+  @media (min-width:900px){
+    .v-orders main{gap:8px}
+    .v-orders .order{display:grid;grid-template-columns:150px minmax(0,1fr) 280px 190px;gap:24px;align-items:center;padding:10px 18px}
+    .v-orders .top{flex-direction:column;align-items:flex-start;gap:2px}
+    .v-orders .pill{margin-left:0}
+    .v-orders .items{margin:0;border-top:0}
+    .v-orders .items li{padding:3px 0;border-bottom:0;font-size:.9rem}
+    .v-orders .addr{font-size:.85rem;line-height:1.35}
+    .v-orders .foot{margin-top:0;justify-content:flex-end;gap:10px 14px}
+    .v-orders .foot form{margin-left:0}
+    .v-orders .btn,.v-orders .btn-ghost{padding:8px 12px;font-size:.85rem}
+  }
+</style></head><body class="${view === 'products' ? 'v-products' : 'v-orders'}">
 <header><h1>Savourly orders</h1><nav class="tabs">${tabs(view, c)}</nav></header>
 <main>${body}</main>
 </body></html>`, { headers: { 'content-type': 'text/html;charset=utf-8', 'cache-control': 'no-store' } });
