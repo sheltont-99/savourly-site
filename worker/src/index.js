@@ -37,8 +37,8 @@ function corsPreflight() {
 // so every price is looked up server-side. Keep these in step with index.html.
 const PRICING = {
   currency: 'gbp',
-  postage: 2.95,
-  card: { price: 3.50, styles: ['Classic', 'Funky', 'Fine Dining'] },
+  postage: 1.49,
+  card: { price: 1.99, styles: ['Classic', 'Funky', 'Fine Dining'] },
   box: {
     styles: ['Kraft Wrap', 'Gift Ribbon', 'Keepsake Tin'],
     prices: { 'Starter Box': 12.00, "Chef's Choice Box": 18.00, "Collector's Box": 29.00 },
