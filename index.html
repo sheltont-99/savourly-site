@@ -182,6 +182,13 @@
   }
   .product-add:hover{background:#a5761f;}
   .product-add:disabled{opacity:0.5;cursor:not-allowed;}
+  .product-add.added,.product-add.added:disabled{background:#3E7B4F;opacity:1;cursor:default;}
+  .product-add .tick{display:inline-block;width:1.05em;height:1.05em;vertical-align:-0.18em;margin-right:6px;stroke:currentColor;fill:none;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round;}
+  .product-add .tick path{stroke-dasharray:24;stroke-dashoffset:24;animation:tickDraw .35s ease-out forwards;}
+  @keyframes tickDraw{to{stroke-dashoffset:0;}}
+  .cart-count.bump{animation:cartBump .45s ease-out;}
+  @keyframes cartBump{0%{transform:scale(1);}40%{transform:scale(1.45);}100%{transform:scale(1);}}
+  @media (prefers-reduced-motion: reduce){.product-add .tick path{animation:none;stroke-dashoffset:0;}.cart-count.bump{animation:none;}}
   .product-link{
     position:absolute;top:14px;right:48px;width:30px;height:30px;display:flex;align-items:center;justify-content:center;
     background:none;border:none;color:var(--cream-dim);cursor:pointer;
@@ -1181,7 +1188,13 @@
         const existing = CART.find(i => i.name === itemName);
         if(existing) existing.qty++; else CART.push({id: card.dataset.id, name:itemName, style: chosenStyleName, price, qty:1});
         renderCart();
-        closeProduct();
+        // Confirm it worked: tick on the button and a bump on the cart count, then close
+        const addBtn = document.getElementById('productAdd');
+        addBtn.disabled = true;
+        addBtn.classList.add('added');
+        addBtn.innerHTML = '<svg class="tick" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Added to cart';
+        cartCountEl.classList.remove('bump'); void cartCountEl.offsetWidth; cartCountEl.classList.add('bump');
+        setTimeout(() => { if(productOverlay.classList.contains('open') && addBtn.isConnected) closeProduct(); }, 900);
       });
     }
     draw();
