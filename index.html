@@ -708,9 +708,7 @@
     </div>
     <div class="grid">
       <div class="card c1" data-price="12.00" data-box="starter-box" data-id="PR00050">
-        <div class="card-art"><span class="num">01</span>
-          <svg viewBox="0 0 64 64"><rect x="14" y="26" width="36" height="24" rx="2"/><path d="M14 34h36"/><path d="M32 26v24"/><path d="M24 26c-4-6 2-12 8-6 6-6 12 0 8 6"/></svg>
-        </div>
+        <div class="card-art photo-art"><span class="num">01</span><img class="card-photo" src="images/box-pantry.jpg" alt="The Pantry Box" loading="lazy"></div>
         <div class="card-body">
           <h3>The Taster Set</h3>
           <p class="desc">Three recipe cards from three different chefs — a taste of the platform before you settle on one kitchen.</p>
@@ -718,9 +716,7 @@
         </div>
       </div>
       <div class="card c3" data-price="18.00" data-box="chefs-choice-box" data-id="PR00051">
-        <div class="card-art"><span class="num">02</span>
-          <svg viewBox="0 0 64 64"><rect x="14" y="26" width="36" height="24" rx="2"/><path d="M14 34h36"/><path d="M32 26v24"/><path d="M24 26c-4-6 2-12 8-6 6-6 12 0 8 6"/></svg>
-        </div>
+        <div class="card-art photo-art"><span class="num">02</span><img class="card-photo" src="images/box-pantry.jpg" alt="The Pantry Box" loading="lazy"></div>
         <div class="card-body">
           <h3>The Chef's Table Set</h3>
           <p class="desc">Five cards curated by one chef around a theme — a weeknight menu, a Sunday spread, a dinner for two.</p>
@@ -728,9 +724,7 @@
         </div>
       </div>
       <div class="card c5" data-price="29.00" data-box="collectors-box" data-id="PR00052">
-        <div class="card-art"><span class="num">03</span>
-          <svg viewBox="0 0 64 64"><rect x="14" y="26" width="36" height="24" rx="2"/><path d="M14 34h36"/><path d="M32 26v24"/><path d="M24 26c-4-6 2-12 8-6 6-6 12 0 8 6"/></svg>
-        </div>
+        <div class="card-art photo-art"><span class="num">03</span><img class="card-photo" src="images/box-pantry.jpg" alt="The Pantry Box" loading="lazy"></div>
         <div class="card-body">
           <h3>The Collector's Set</h3>
           <p class="desc">Eight cards plus a recipe box of your choice to hold them in — the full Savourly set, wrapped as a gift.</p>
@@ -1137,9 +1131,9 @@
     const previewFor = id => (styleSet.find(s => s.id === id) || {}).img || stylePreviews[STYLE_SLUG[id]] || cardPreviewImg;
     const mediaFor = id => previewFor(id)
       ? '<img class="mock-photo" src="' + esc(previewFor(id)) + '" alt=""' + (isBox ? ' style="object-position:center"' : '') + '>'
-      : (photoEl
+      : (photoEl && !isBox
         ? '<img class="mock-photo" src="' + photoEl.src + '" alt="">'
-        : card.querySelector('.card-art svg').outerHTML);
+        : (isBox ? BOX_THUMB_ICON : card.querySelector('.card-art svg').outerHTML));
     let selected = styleSet[0].id;
 
     function draw(){
