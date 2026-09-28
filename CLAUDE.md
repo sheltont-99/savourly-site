@@ -2,6 +2,8 @@
 
 A recipe-card shop: chefs publish recipe cards, customers buy and print them. Full architecture in `SETUP.md` — read that for how the pieces fit together.
 
+**Architecture diagram**: https://claude.ai/artifact/PpXRrURp7ZZ75LEBxi9fkw — three flows: Claude pushing content into the two repos below (which auto-deploy on push to `main`), a shopper browsing/paying (checkout Worker → Stripe → D1), and the owner reading orders via the admin Worker.
+
 ## Use these skills for this repo
 
 - **savourly-product-manager** — adding, editing, re-pricing, hiding/unhiding or reordering recipe cards, recipe boxes or chefs; adding thumbnails and print PDFs.
