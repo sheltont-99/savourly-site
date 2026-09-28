@@ -815,7 +815,12 @@
       bio:"Niko Papadakis baked in patisseries across Thessaloniki and Athens for a decade before turning back to the pies and pastries his yiayia taught him. Each card below is a single recipe, tested for a home stove and written the way he'd explain it to you at the pastry bench.",
       aboutH:"Greek pastry, laminated and layered until it's right.",
       aboutP:["Niko trained in patisseries across Thessaloniki and Athens, then spent years on the pies and filo bakes of his family's kitchen, working out the details — how thin to roll the filo, how many layers of butter a lattice needs, how long a pie has to rest before it's cut — that decide whether a bake holds together.","Every card is one dish, one method, written in full. Buy what you want to cook this week."],
-      stats:[["45","recipe cards published"],["12 yrs","professional kitchens"],["1","cookbook in progress"]], total:45, bundle:86}
+      stats:[["45","recipe cards published"],["12 yrs","professional kitchens"],["1","cookbook in progress"]], total:45, bundle:86},
+    {id:"CHEF00009", name:"Alfie Cooks", cuisine:"Modern comfort food, plant-forward", role:"Home cook & recipe developer", pron:"his", photo:"images/CHEF00009-portrait.jpg",
+      bio:"Alfie Cooks writes and shoots every recipe from his own kitchen, chasing the big, familiar flavours of a takeaway without losing the ease of a weeknight dinner. Each card below is a single recipe, tested for a home stove and written the way he'd explain it to you at the counter.",
+      aboutH:"Big flavours, built to fit a weeknight.",
+      aboutP:["Alfie tests every recipe in his own kitchen before it goes on the page, working out the shortcuts — the air fryer instead of the grill, a shop-bought harissa instead of a jar you'd have to make — that get a proper plate of food on the table without the fuss.","Every card is one dish, one method, written in full. Buy what you want to cook this week."],
+      stats:[["15","recipe cards published"],["3 yrs","home cooking on Substack"],["1","cookbook in progress"]], total:15, bundle:29}
   ];
   CHEFS.forEach(c => { c.slug = c.name.toLowerCase().replace(/[^a-z]+/g,'-').replace(/^-|-$/g,''); });
   function chefHref(c){ return '#chef/' + c.slug; }
@@ -835,7 +840,9 @@
   if(chefsGrid){
     chefsGrid.innerHTML = CHEFS.map((c, i) =>
       '<a class="chef-card" data-i="' + i + '" href="' + chefHref(c) + '">' +
-        '<div class="chef-avatar" style="background:' + CHEF_AVATAR_GRADIENTS[i % CHEF_AVATAR_GRADIENTS.length] + '">' + CHEF_ICON_SVG + '</div>' +
+        (c.photo
+          ? '<div class="chef-avatar" style="background:center/cover no-repeat url(' + esc(c.photo) + ')"></div>'
+          : '<div class="chef-avatar" style="background:' + CHEF_AVATAR_GRADIENTS[i % CHEF_AVATAR_GRADIENTS.length] + '">' + CHEF_ICON_SVG + '</div>') +
         '<div class="chef-card-name">' + c.name + '</div>' +
       '</a>'
     ).join('');
@@ -1328,7 +1335,7 @@
   // Simple page routing: #chefs = All Chefs, #chef/<slug> = a chef's page, anything else = Amara's page
   // Chef pages are copies of Amara's page (hero, recipe cards, about) filled with each chef's details
   const CARD_ART = ["<svg viewBox=\"0 0 64 64\"><path d=\"M14 34a18 10 0 0 0 36 0\"/><path d=\"M12 34h40\"/><path d=\"M20 34c0-3 2-5 2-8\"/><path d=\"M32 34c0-4 3-6 3-10\"/><path d=\"M44 34c0-3-2-5-2-8\"/></svg>", "<svg viewBox=\"0 0 64 64\"><path d=\"M12 30a20 12 0 0 0 40 0\"/><path d=\"M10 30h44\"/><circle cx=\"30\" cy=\"24\" r=\"3\"/><path d=\"M44 16l5-7\"/><ellipse cx=\"44\" cy=\"16\" rx=\"3\" ry=\"2\" transform=\"rotate(35 44 16)\"/></svg>", "<svg viewBox=\"0 0 64 64\"><ellipse cx=\"20\" cy=\"24\" rx=\"10\" ry=\"5\" transform=\"rotate(-20 20 24)\"/><ellipse cx=\"33\" cy=\"33\" rx=\"10\" ry=\"5\" transform=\"rotate(-20 33 33)\"/><ellipse cx=\"46\" cy=\"42\" rx=\"10\" ry=\"5\" transform=\"rotate(-20 46 42)\"/></svg>", "<svg viewBox=\"0 0 64 64\"><path d=\"M12 32a20 12 0 0 0 40 0\"/><path d=\"M10 32h44\"/><circle cx=\"24\" cy=\"26\" r=\"2.2\"/><circle cx=\"30\" cy=\"24\" r=\"2.2\"/><circle cx=\"36\" cy=\"27\" r=\"2.2\"/><ellipse cx=\"46\" cy=\"19\" rx=\"7\" ry=\"3.5\" transform=\"rotate(-25 46 19)\"/></svg>", "<svg viewBox=\"0 0 64 64\"><path d=\"M12 32a20 12 0 0 0 40 0\"/><path d=\"M10 32h44\"/><path d=\"M18 29h28\" opacity=\"0.6\"/><path d=\"M20 25h24\" opacity=\"0.4\"/></svg>", "<svg viewBox=\"0 0 64 64\"><rect x=\"20\" y=\"22\" width=\"24\" height=\"26\" rx=\"4\"/><rect x=\"24\" y=\"14\" width=\"16\" height=\"8\" rx=\"2\"/><line x1=\"20\" y1=\"32\" x2=\"44\" y2=\"32\" opacity=\"0.5\"/></svg>"];
-  const TEMPLATE = ['body > .hero', 'body > .shop', 'body > .about'].map(sel => document.querySelector(sel).cloneNode(true));
+  const TEMPLATE = ['body > .hero:not(.landing-section)', 'body > .shop', 'body > .about:not(.landing-section)'].map(sel => document.querySelector(sel).cloneNode(true));
   const profileBody = document.getElementById('profileBody');
   function renderProfile(c, idx){
     profileBody.innerHTML = '';
@@ -1339,7 +1346,13 @@
     hero.querySelector('.kicker').textContent = c.role + ', ' + c.cuisine;
     hero.querySelector('.chef-name').innerHTML = esc(parts.join(' ')) + ' <em>' + esc(last) + '</em>';
     hero.querySelector('.lede').textContent = c.bio;
-    hero.querySelector('.portrait').style.background = CHEF_AVATAR_GRADIENTS[idx % CHEF_AVATAR_GRADIENTS.length];
+    const portrait = hero.querySelector('.portrait');
+    if(c.photo){
+      portrait.style.background = 'center/cover no-repeat url(' + JSON.stringify(c.photo) + ')';
+      portrait.querySelectorAll(':scope > svg, .chef-icon').forEach(el => el.remove());
+    } else {
+      portrait.style.background = CHEF_AVATAR_GRADIENTS[idx % CHEF_AVATAR_GRADIENTS.length];
+    }
     const tag = hero.querySelector('.portrait .tag'); if(tag) tag.remove();
     const ctas = hero.querySelectorAll('.hero-cta a');
     ctas[0].setAttribute('href', '#profShop');

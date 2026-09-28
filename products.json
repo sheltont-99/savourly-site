@@ -45,6 +45,10 @@
     {
       "id": "CHEF00008",
       "name": "Niko Papadakis"
+    },
+    {
+      "id": "CHEF00009",
+      "name": "Alfie Cooks"
     }
   ],
   "products": [
@@ -516,6 +520,17 @@
       "type": "box",
       "price": 29.0,
       "description": "Eight cards plus a keepsake tin to hold them in — the full Savourly set, wrapped as a gift.",
+      "hidden": false
+    },
+    {
+      "id": "PR00053",
+      "name": "Shawarma Salad with Smoky Tofu & Harissa",
+      "chefId": "CHEF00009",
+      "type": "card",
+      "price": 1.99,
+      "description": "Crispy smoked tofu and roasted mushrooms in a harissa tahini yoghurt, with pickles and flatbread croutons — all the shawarma flavour, no meat.",
+      "thumbnail": "images/PR00053-thumbnail.jpg",
+      "preview": "images/PR00053-preview.jpg",
       "hidden": false
     }
   ]
