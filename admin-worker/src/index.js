@@ -12,6 +12,17 @@ function escapeHtml(s) {
   return String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
+// Print-ready PDFs live in a PRIVATE repo (they're what customers pay for), one per
+// product and style: print/<ID>/<ID>-<style>.pdf, e.g. print/PR00007/PR00007-fine-dining.pdf
+const PRINT_REPO = 'sheltont-99/savourly-print-files';
+function styleSlug(style) { return String(style || '').toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''); }
+function pdfPath(id, style) { return `print/${id}/${id}-${styleSlug(style)}.pdf`; }
+function pdfLink(id, style) {
+  if (!id || !style) return '';
+  const path = pdfPath(id, style);
+  return `<a class="pdf" href="https://github.com/${PRINT_REPO}/blob/main/${encodeURI(path)}" target="_blank" rel="noopener" title="Open ${escapeHtml(path)}">PDF</a>`;
+}
+
 // An ID with a small copy-to-clipboard button next to it.
 function idTag(id) {
   const v = escapeHtml(id);
@@ -332,7 +343,7 @@ async function page(env, view) {
 
     return `<article class="order">
       <div class="top"><strong class="ref">${escapeHtml(o.order_ref)}<button type="button" class="cp" data-copy="${escapeHtml(o.order_ref)}" title="Copy ${escapeHtml(o.order_ref)}" aria-label="Copy ${escapeHtml(o.order_ref)}"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg></button></strong><span class="dim">${escapeHtml(fmtDate(o.created_at))}</span>${badge}</div>
-      <ul class="items">${items.map((i) => `<li><span>${i.id ? idTag(i.id) : ''}${escapeHtml(i.style ? `${i.name} — ${i.style}` : i.name)}</span><b>× ${Number(i.qty)}</b></li>`).join('')}</ul>
+      <ul class="items">${items.map((i) => `<li><span>${i.id ? idTag(i.id) : ''}${escapeHtml(i.style ? `${i.name} — ${i.style}` : i.name)}${pdfLink(i.id, i.style)}</span><b>× ${Number(i.qty)}</b></li>`).join('')}</ul>
       <div class="addr"><b>${escapeHtml(o.customer_name)}</b><br>${escapeHtml(o.shipping_address)}<br><span class="dim">${escapeHtml(o.customer_email)}</span></div>
       <div class="foot"><span class="total">£${Number(o.total).toFixed(2)}</span>${stripe}${action}</div>
     </article>`;
@@ -371,7 +382,7 @@ function shell(view, c, body) {
   .items{list-style:none;margin:12px 0;padding:0;border-top:1px solid #f1ede4}
   .items li{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid #f1ede4;font-size:.95rem}
   .items li b{white-space:nowrap}
-  @media (max-width:480px){.tabs{gap:2px}.tab{padding:9px 9px;font-size:.84rem}.tab span{padding:1px 6px;margin-left:3px}}
+  @media (max-width:480px){header{padding-left:10px;padding-right:10px}.tabs{gap:0}.tab{padding:9px 7px;font-size:.8rem}.tab span{padding:1px 5px;margin-left:3px;font-size:.7rem}}
   .addr{font-size:.92rem;line-height:1.45}
   .foot{display:flex;align-items:center;gap:14px;margin-top:12px;flex-wrap:wrap}
   .foot form{margin-left:auto}
@@ -410,6 +421,8 @@ function shell(view, c, body) {
   .cp.ok svg{display:none}
   .cp.ok::after{content:'✓';font-size:.8rem;font-weight:700;line-height:15px;width:15px;text-align:center}
   .ref{display:inline-flex;align-items:center;gap:2px}
+  .pdf{display:inline-block;margin-left:8px;padding:1px 7px;border:1px solid #d9cfbb;border-radius:5px;font-size:.72rem;font-weight:700;letter-spacing:.03em;color:#8A5A2B;text-decoration:none;vertical-align:1px}
+  .pdf:hover{background:#8A5A2B;color:#fff;border-color:#8A5A2B}
   .group h2{display:flex;align-items:center;gap:10px}
   .group h2 .pid{font-size:.75rem}
   .pad{padding:18px 22px}

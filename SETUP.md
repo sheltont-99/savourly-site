@@ -80,6 +80,23 @@ Quick check that each Worker has the right code: the checkout URL should say **"
   | Asks for bank verification (3D Secure), then succeeds | 4000 0025 0000 3155 |
   | Always declined | 4000 0000 0000 0002 |
 
+## Print files (PDFs)
+
+The print-ready PDF for every product **and style** lives in the **private** repo `sheltont-99/savourly-print-files`. It's private because these files are what customers pay for. Each product line in the admin order log has a **PDF** link to the matching file, which opens for you when you're logged in to GitHub.
+
+Files must follow this naming pattern exactly (lower-case style, spaces become hyphens):
+
+```
+print/<product ID>/<product ID>-<style>.pdf
+
+print/PR00007/PR00007-classic.pdf
+print/PR00007/PR00007-funky.pdf
+print/PR00007/PR00007-fine-dining.pdf
+print/PR00051/PR00051-keepsake-tin.pdf      (boxes: kraft-wrap, gift-ribbon, keepsake-tin)
+```
+
+To upload: open the repo on GitHub → **Add file → Upload files**, drag the PDFs in, and before committing type the folder into the file path (e.g. `print/PR00007/`). If a link shows GitHub's 404 page, that file hasn't been uploaded yet or its name doesn't match the pattern.
+
 ## Create or renew the GitHub token (for weekly reports)
 
 The key lives in your GitHub **account** settings, not the repo's settings.
@@ -105,6 +122,7 @@ The key lives in your GitHub **account** settings, not the repo's settings.
 | Add, edit, re-price, reorder products | Edit `products.json` (ask Claude, which uses the *savourly-products* skill) |
 | Change postage | `postage` in `products.json` |
 | Check a payment | Order row → *View in Stripe* |
+| Print a product | Order row → **PDF** next to the product (opens the right product + style file) |
 | Excel report | Admin → **Reports** → *Last week* / *This week so far* / *All orders*; weekly copies in the private repo `savourly-reports/reports/<year>/` |
 
 ID rules: products are `PR` + 5 digits, chefs are `CHEF` + 5 digits (listed under `chefs` in `products.json`, and on each chef's `CHEFS` entry in `index.html`). The next number is always the highest + 1, and IDs are never changed or reused. Products are hidden (`"hidden": true`), not deleted.
