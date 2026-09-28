@@ -26,10 +26,13 @@ function fmtDate(iso) {
 
 // ============================================================================
 // Weekly Excel report
-// Every Monday (Cron Trigger) the Worker builds last week's report and emails it
-// via Resend (secrets: RESEND_API_KEY, REPORT_EMAIL). The Reports tab also lets
-// you download it any time.
+// Every Monday (Cron Trigger) the Worker builds last week's report and saves it
+// into a PRIVATE GitHub repo (secret GITHUB_TOKEN, scoped to that repo only).
+// It refuses to save if that repo is public, because reports hold customer
+// names, emails and addresses. The Reports tab also lets you download any time.
 // ============================================================================
+
+const REPORTS_REPO = 'sheltont-99/savourly-reports';
 
 const BOX_STYLES = ['Kraft Wrap', 'Gift Ribbon', 'Keepsake Tin'];
 
@@ -222,33 +225,51 @@ function buildReport({ label, orders, types }) {
 
 function toBase64(bytes) { let bin = ''; for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000)); return btoa(bin); }
 
-async function emailReport(env, range = 'last') {
-  if (!env.RESEND_API_KEY || !env.REPORT_EMAIL) throw new Error('Weekly email is not set up yet (RESEND_API_KEY and REPORT_EMAIL are needed).');
+async function gh(env, path, init = {}) {
+  return fetch(`https://api.github.com/repos/${REPORTS_REPO}${path}`, {
+    ...init,
+    headers: {
+      Authorization: `Bearer ${env.GITHUB_TOKEN}`,
+      Accept: 'application/vnd.github+json',
+      'User-Agent': 'savourly-admin',
+      ...(init.body ? { 'content-type': 'application/json' } : {}),
+    },
+  });
+}
+
+// Saves the report as reports/<year>/<from>_to_<to>.xlsx in the private repo.
+async function saveReport(env, range = 'last') {
+  if (!env.GITHUB_TOKEN) throw new Error('Saving to GitHub is not set up yet (the GITHUB_TOKEN secret is missing).');
+  const repoRes = await gh(env, '');
+  if (!repoRes.ok) throw new Error(`Can't reach the ${REPORTS_REPO} repo (GitHub said ${repoRes.status}). Check it exists and the token has access to it.`);
+  const repo = await repoRes.json();
+  if (!repo.private) throw new Error(`${REPORTS_REPO} is PUBLIC, so the report was not saved (it contains customer details). Make the repo private first.`);
+
   const data = await reportData(env, range);
-  const file = buildReport(data);
-  const total = data.orders.reduce((n, o) => n + (Number(o.total) || 0), 0);
-  const res = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, 'content-type': 'application/json' },
+  const year = data.file.slice(0, 4).match(/^\d{4}$/) ? data.file.slice(0, 4) : String(new Date().getUTCFullYear());
+  const path = `reports/${year}/${data.file.replace(/-to-/, '_to_')}.xlsx`;
+  const existing = await gh(env, `/contents/${path}`);
+  const sha = existing.ok ? (await existing.json()).sha : undefined;
+  const put = await gh(env, `/contents/${path}`, {
+    method: 'PUT',
     body: JSON.stringify({
-      from: 'Savourly reports <onboarding@resend.dev>',
-      to: [env.REPORT_EMAIL],
-      subject: `Savourly weekly orders: ${data.label}`,
-      html: `<p>Your Savourly orders report for <b>${escapeHtml(data.label)}</b> is attached.</p><p>${data.orders.length} paid order${data.orders.length === 1 ? '' : 's'} · £${total.toFixed(2)} taken.</p><p><a href="https://savourly-admin.shelts-tom.workers.dev/">Open your order log</a></p>`,
-      attachments: [{ filename: `Savourly orders ${data.file}.xlsx`, content: toBase64(file) }],
+      message: `Orders report ${data.label} (${data.orders.length} paid order${data.orders.length === 1 ? '' : 's'})`,
+      content: toBase64(buildReport(data)),
+      ...(sha ? { sha } : {}),
     }),
   });
-  if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.message || `Resend said ${res.status}`); }
-  return data;
+  if (!put.ok) { const e = await put.json().catch(() => ({})); throw new Error(e.message || `GitHub said ${put.status}`); }
+  return { path, url: `https://github.com/${REPORTS_REPO}/blob/main/${path}`, count: data.orders.length };
 }
 
 async function reportsPage(env, url) {
   const c = await counts(env);
-  const ready = !!(env.RESEND_API_KEY && env.REPORT_EMAIL);
-  const sent = url.searchParams.get('sent'), err = url.searchParams.get('err');
+  const ready = !!env.GITHUB_TOKEN;
+  const saved = url.searchParams.get('saved'), err = url.searchParams.get('err');
+  const folder = `https://github.com/${REPORTS_REPO}/tree/main/reports`;
   const last = reportRange('last'), now = reportRange('this');
   const body = `
-    ${sent ? `<div class="flash ok">Sent — check ${escapeHtml(env.REPORT_EMAIL || 'your inbox')} (and spam, the first time).</div>` : ''}
+    ${saved ? `<div class="flash ok">Saved to GitHub: <a href="https://github.com/${REPORTS_REPO}/blob/main/${escapeHtml(saved)}" target="_blank" rel="noopener">${escapeHtml(saved)}</a></div>` : ''}
     ${err ? `<div class="flash bad">${escapeHtml(err)}</div>` : ''}
     <section class="group pad">
       <h2 class="plain">Download an Excel report</h2>
@@ -260,11 +281,11 @@ async function reportsPage(env, url) {
       </div>
     </section>
     <section class="group pad">
-      <h2 class="plain">Weekly email</h2>
+      <h2 class="plain">Weekly copy saved to GitHub</h2>
       ${ready
-        ? `<p><span class="pill pill-posted">On</span> Last week's report is emailed to <b>${escapeHtml(env.REPORT_EMAIL)}</b> every Monday morning (if the Cron Trigger is set).</p>
-           <form method="post" action="/report/email"><button class="btn">Email me last week's report now</button></form>`
-        : `<p><span class="pill pill-pending">Not set up</span> Add the <b>RESEND_API_KEY</b> and <b>REPORT_EMAIL</b> secrets and a Monday Cron Trigger to this Worker to get it by email (see SETUP.md).</p>`}
+        ? `<p><span class="pill pill-posted">On</span> Every Monday morning last week's report is saved to your private repo, in <a href="${folder}" target="_blank" rel="noopener">${escapeHtml(REPORTS_REPO)} → reports</a>, one file per week (if the Cron Trigger is set).</p>
+           <form method="post" action="/report/save"><button class="btn">Save last week's report to GitHub now</button></form>`
+        : `<p><span class="pill pill-pending">Not set up</span> Create the private repo <b>${escapeHtml(REPORTS_REPO)}</b>, add a <b>GITHUB_TOKEN</b> secret to this Worker and a Monday Cron Trigger (see SETUP.md).</p>`}
     </section>`;
   return shell('reports', c, body);
 }
@@ -506,10 +527,10 @@ export default {
         'cache-control': 'no-store',
       } });
     }
-    if (request.method === 'POST' && url.pathname === '/report/email') {
+    if (request.method === 'POST' && url.pathname === '/report/save') {
       const origin = request.headers.get('origin');
       if (origin && origin !== url.origin) return new Response('Forbidden', { status: 403 });
-      try { await emailReport(env, 'last'); return Response.redirect(new URL('/?view=reports&sent=1', url).toString(), 303); }
+      try { const r = await saveReport(env, 'last'); return Response.redirect(new URL('/?view=reports&saved=' + encodeURIComponent(r.path), url).toString(), 303); }
       catch (e) { return Response.redirect(new URL('/?view=reports&err=' + encodeURIComponent(e.message), url).toString(), 303); }
     }
     if (request.method === 'GET' && url.pathname === '/') {
@@ -521,8 +542,8 @@ export default {
     return new Response('Not found', { status: 404 });
   },
 
-  // Runs on the Worker's Cron Trigger (set to Mondays) — emails last week's report.
+  // Runs on the Worker's Cron Trigger (set to Mondays) — saves last week's report to GitHub.
   async scheduled(event, env, ctx) {
-    ctx.waitUntil(emailReport(env, 'last').catch((e) => console.error('Weekly report failed:', e.message)));
+    ctx.waitUntil(saveReport(env, 'last').catch((e) => console.error('Weekly report failed:', e.message)));
   },
 };

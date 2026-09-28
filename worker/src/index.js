@@ -48,9 +48,24 @@ async function loadCatalog(env) {
 
 const MAX_QTY_PER_LINE = 50;
 
-function orderRef() {
-  const rand = crypto.randomUUID().split('-')[0];
-  return 'SV-' + rand.toUpperCase();
+// Order references are a simple running number: OID000001, OID000002, …
+// The number is chosen and saved in ONE database statement, so two customers
+// checking out at the same moment can never get the same reference.
+async function reserveOrder(env, o) {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const row = await env.DB.prepare(
+        `INSERT INTO orders (order_ref, status, customer_name, customer_email, shipping_address, items_json, subtotal, postage, total, currency, created_at)
+         SELECT 'OID' || printf('%06d', COALESCE(MAX(CAST(substr(order_ref, 4) AS INTEGER)), 0) + 1), 'pending', ?, ?, ?, ?, ?, ?, ?, 'gbp', ?
+         FROM orders WHERE order_ref GLOB 'OID[0-9]*'
+         RETURNING order_ref`
+      ).bind(o.name, o.email, o.address, o.itemsJson, o.subtotal, o.postage, o.total, new Date().toISOString()).first();
+      return row.order_ref;
+    } catch (e) {
+      if (!/UNIQUE/i.test(String(e && e.message))) throw e;
+    }
+  }
+  throw new Error('Could not create an order number — please try again.');
 }
 
 // Stripe's API takes application/x-www-form-urlencoded with bracket notation
@@ -110,7 +125,13 @@ async function handleCreateCheckoutSession(request, env) {
   const postage = catalog.postage;
   const subtotal = items.reduce((s, i) => s + i.price * i.qty, 0);
   const total = subtotal + postage;
-  const ref = orderRef();
+  const ref = await reserveOrder(env, {
+    name: String(customer.name || '').slice(0, 200) || null,
+    email: String(customer.email || '').slice(0, 200) || null,
+    address: String(customer.address || '').slice(0, 500) || null,
+    itemsJson: JSON.stringify(items),
+    subtotal, postage, total,
+  });
 
   const lineItems = items.map((i) => ({
     price_data: {
@@ -126,30 +147,21 @@ async function handleCreateCheckoutSession(request, env) {
   });
 
   const siteUrl = env.SITE_URL.replace(/\/$/, '');
-  const session = await stripeRequest(env, 'checkout/sessions', toFormParams({
-    mode: 'payment',
-    'line_items': lineItems,
-    success_url: `${siteUrl}/#order-success?ref=${ref}`,
-    cancel_url: `${siteUrl}/#cart`,
-    customer_email: customer.email || undefined,
-    metadata: { order_ref: ref },
-  }));
-
-  await env.DB.prepare(
-    `INSERT INTO orders (order_ref, stripe_session_id, status, customer_name, customer_email, shipping_address, items_json, subtotal, postage, total, currency, created_at)
-     VALUES (?, ?, 'pending', ?, ?, ?, ?, ?, ?, ?, 'gbp', ?)`
-  ).bind(
-    ref,
-    session.id,
-    String(customer.name || '').slice(0, 200) || null,
-    String(customer.email || '').slice(0, 200) || null,
-    String(customer.address || '').slice(0, 500) || null,
-    JSON.stringify(items),
-    subtotal,
-    postage,
-    total,
-    new Date().toISOString()
-  ).run();
+  let session;
+  try {
+    session = await stripeRequest(env, 'checkout/sessions', toFormParams({
+      mode: 'payment',
+      'line_items': lineItems,
+      success_url: `${siteUrl}/#order-success?ref=${ref}`,
+      cancel_url: `${siteUrl}/#cart`,
+      customer_email: customer.email || undefined,
+      metadata: { order_ref: ref },
+    }));
+  } catch (e) {
+    await env.DB.prepare(`DELETE FROM orders WHERE order_ref=? AND status='pending'`).bind(ref).run(); // give the number back
+    throw e;
+  }
+  await env.DB.prepare(`UPDATE orders SET stripe_session_id=? WHERE order_ref=?`).bind(session.id, ref).run();
 
   return json({ url: session.url, order_ref: ref });
 }
