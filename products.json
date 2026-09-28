@@ -51,7 +51,7 @@
       "type": "card",
       "price": 1.99,
       "description": "Smoked, deep red, cooked low until the bottom catches — the version she makes for a crowd.",
-      "hidden": false
+      "hidden": true
     },
     {
       "id": "PR00002",
