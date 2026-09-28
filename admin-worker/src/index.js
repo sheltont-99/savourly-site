@@ -487,6 +487,10 @@ async function printFileNames(env) {
   } catch { return null; }
 }
 
+// Styles still being designed: shown on the Products tab as placeholders so their print files can be
+// added ahead of launch. They are NOT in products.json, so customers can't order them yet.
+const UPCOMING_STYLES = { card: ['Chef Special'] };
+
 // One small tag per style: a link when the file exists, faded when it hasn't been added yet.
 function pdfTags(id, styles, files) {
   if (!styles || !styles.length) return '';
@@ -527,7 +531,7 @@ async function productsPage(env) {
       <div class="prow phead"><span>Hidden</span><span>ID</span><span>Product</span><span>Price</span><span>Sold</span></div>` +
       list.map((p) => `<div class="prow${p.hidden ? ' is-hidden' : ''}" data-q="${escapeHtml(`${p.id} ${p.name} ${chefId} ${chefName[chefId] || 'recipe boxes'}`.toLowerCase())}">
         <span class="hbox${p.hidden ? ' on' : ''}" role="img" aria-label="${p.hidden ? 'Hidden' : 'On site'}" title="${p.hidden ? 'Hidden from the website' : 'Showing on the website'}">${p.hidden ? '✓' : ''}</span>
-        ${idTag(p.id)}<span>${escapeHtml(p.name)}${p.hidden ? ' <span class="hid">Hidden</span>' : ''}${pdfTags(p.id, (cat.styles || {})[p.type], files)}</span><span>£${Number(p.price).toFixed(2)}</span>
+        ${idTag(p.id)}<span>${escapeHtml(p.name)}${p.hidden ? ' <span class="hid">Hidden</span>' : ''}${pdfTags(p.id, [...((cat.styles || {})[p.type] || []), ...(UPCOMING_STYLES[p.type] || []).filter((st) => !((cat.styles || {})[p.type] || []).includes(st))], files)}</span><span>£${Number(p.price).toFixed(2)}</span>
         <span class="sold">${sold[p.id] ? `<b>${sold[p.id]} sold</b>` : '0 sold'}</span></div>`).join('') +
       `</section>`).join('') +
     `<script>
