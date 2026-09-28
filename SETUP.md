@@ -14,7 +14,7 @@ This repo is public. Nothing here is secret; keys and passwords live only in Clo
                   ◄──────── back to site, "Order confirmed" ───┤
                                                                ▼
  You ──email login (Cloudflare Access)──► savourly-admin ──► D1 database "savourly-orders"
-                                               │  Products tab reads/writes products.json on GitHub
+                                               │  Products tab reads products.json (view only)
 ```
 
 | Piece | Where | What it does |
@@ -22,7 +22,7 @@ This repo is public. Nothing here is secret; keys and passwords live only in Clo
 | Website | `index.html` in this repo → https://sheltont-99.github.io/savourly-site/ | Shop, chef pages, cart, checkout form. Builds every card from `products.json`. |
 | Product list | `products.json` (+ photos in `images/`) | The only place products live: IDs, names, chefs, prices, descriptions, hidden flags, postage. |
 | Checkout | Cloudflare Worker **savourly-checkout** → https://savourly-checkout.shelts-tom.workers.dev (shows "Not found" in a browser; that's normal) | Prices the cart from `products.json`, creates the Stripe payment page, saves the order, marks it paid when Stripe confirms. Must stay public. |
-| Order log | Cloudflare Worker **savourly-admin** → https://savourly-admin.shelts-tom.workers.dev | Your private page: To post / Posted / All / Products. Locked with Cloudflare Access (email one-time code). |
+| Order log | Cloudflare Worker **savourly-admin** → https://savourly-admin.shelts-tom.workers.dev | Your private page: To post / Posted / All / Products (IDs, prices, sales, Hidden column; view only). Locked with Cloudflare Access (email one-time code). |
 | Database | Cloudflare D1 **savourly-orders** | Every order: ref, customer, address, items (product ID, name, style, qty, price), totals, paid/posted times. |
 | Payments | Stripe (currently **test mode / sandbox**) | Takes the money; holds card details; sends "paid" webhooks. |
 
@@ -45,7 +45,7 @@ Quick check that each Worker has the right code: the checkout URL should say **"
 
 **savourly-admin**: Access protection **on (All traffic)**, allowed email = owner's.
 - Binding: D1 database `DB` → `savourly-orders`
-- Secret: `GITHUB_TOKEN`, a fine-grained GitHub token for this repo only, *Contents: read and write*, 1-year expiry. It powers the Products tab tick boxes. When it expires the boxes become read-only; make a new token and replace the secret.
+- No secrets needed. (If a `GITHUB_TOKEN` secret was added earlier, it's no longer used and can be deleted, along with the GitHub token itself.)
 
 **D1 `savourly-orders`**: table `orders` (see `worker/schema.sql`; `posted_at` was added later with `ALTER TABLE orders ADD COLUMN posted_at TEXT;`).
 
@@ -62,7 +62,7 @@ Quick check that each Worker has the right code: the checkout URL should say **"
 | Task | How |
 |---|---|
 | See / post orders | Admin page → **To post** → *Mark as posted* |
-| Hide / unhide a product | Admin page → **Products** → untick / tick (site updates in ~2 min) |
+| Hide / unhide a product | Ask Claude with the product ID (e.g. "hide PR00010"); IDs are in the admin **Products** tab |
 | Add, edit, re-price, reorder products | Edit `products.json` (ask Claude, which uses the *savourly-products* skill) |
 | Change postage | `postage` in `products.json` |
 | Check a payment | Order row → *View in Stripe* |
@@ -84,4 +84,3 @@ Product ID rules: `PR` + 5 digits, next number = highest + 1, never changed or r
 - **"Couldn't load the recipe cards"**: `products.json` has a JSON mistake (usually a comma). Check the latest commit to it.
 - **"Something went wrong starting checkout"**: check the savourly-checkout code/secrets; look at its Logs in Cloudflare.
 - **Order stuck on "Not paid"**: webhook problem. Check the Stripe webhook destination's recent deliveries; Stripe retries for 3 days.
-- **Products tab says read-only**: `GITHUB_TOKEN` missing, wrong or expired.
