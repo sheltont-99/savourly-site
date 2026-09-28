@@ -574,7 +574,12 @@
       "type": "card",
       "price": 1.99,
       "description": "A silky broccoli soup finished with crumbled stilton — simple, warming and ready in under an hour.",
-      "hidden": true
+      "thumbnail": "images/PR00055-thumbnail.jpg",
+      "preview": "images/PR00055-preview.jpg",
+      "previews": {
+        "funky": "images/PR00055-preview-funky.jpg"
+      },
+      "hidden": false
     }
   ]
 }
