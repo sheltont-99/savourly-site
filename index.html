@@ -1455,7 +1455,7 @@
     if(hash === '#chefs') page = 'chefs';
     else if(hash === '#boxes') page = 'boxes';
     else if(hash === '#contact') page = 'contact';
-    else if(hash.startsWith('#card/')){ page = 'amara'; recipe = hash.slice(6); }
+    else if(hash.startsWith('#card/')){ if(!CHEFS.find(c => c.handbuilt).hidden){ page = 'amara'; recipe = hash.slice(6); } }
     else if(hash.startsWith('#chef/')){
       const bits = hash.slice(6).split('/');
       idx = CHEFS.findIndex(c => c.slug === bits[0] && !c.hidden);

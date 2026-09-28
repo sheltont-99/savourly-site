@@ -12,6 +12,10 @@ A recipe-card shop: chefs publish recipe cards, customers buy and print them. Fu
 
 Reach for one of these first for anything matching its description, rather than editing `products.json` or the Cloudflare Workers by hand.
 
+## Deleting anything: confirm twice
+
+Before deleting anything on GitHub (files, folders, products, chefs, branches, repos, print PDFs, images, commit history, or anything else), ask the owner to confirm, then ask a second time and wait for a second, separate "yes". Only delete after both. This applies to every repo and every session, including scheduled runs: if the owner isn't there to confirm twice, don't delete. Hiding a product or chef is not deleting.
+
 ## Repos
 
 - `sheltont-99/savourly-site` (this repo, public) — website, `products.json`, product images.
