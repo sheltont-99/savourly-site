@@ -94,7 +94,7 @@ Quick check that each Worker has the right code: the checkout URL should say **"
 | `PR00007-funky.pdf` | private repo `savourly-reports`, `print-files/` | Print file, Funky style | You provide it |
 | `PR00007-fine-dining.pdf` | private repo `savourly-reports`, `print-files/` | Print file, Fine Dining style | You provide it, or Claude makes it from the recipe with your PowerPoint template (`savourly-reports/card-maker/`) |
 
-Boxes use the styles `kraft-wrap`, `gift-ribbon` and `keepsake-tin` (e.g. `print-files/PR00051-keepsake-tin.pdf`). File names must match exactly: lower-case style, spaces become hyphens. Without a thumbnail the card shows a drawn icon.
+Boxes use the styles `the-farmhouse-box`, `the-pantry-box` and `the-heirloom-tin` (e.g. `print-files/PR00051-the-heirloom-tin.pdf`). File names must match exactly: lower-case style, spaces become hyphens. Without a thumbnail the card shows a drawn icon.
 
 - **Adding files:** send them to Claude with the product ID and style. Print PDFs must **never** go in this public repo, only in `savourly-reports/print-files/`. Uploading one yourself on GitHub is fine too (savourly-reports → `print-files` → **Add file → Upload files**), but then ask Claude to refresh the previews.
 - **Previews:** `tools/make_previews.py` reads the Fine Dining PDFs from `../savourly-reports/print-files/` (clone both repos side by side), writes the public `images/<ID>-preview.jpg`, and sets `"preview"`. Claude runs it whenever a Fine Dining PDF is added or replaced; there's no GitHub Action for it any more, because the PDFs aren't in this repo.

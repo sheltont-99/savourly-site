@@ -8,9 +8,9 @@
       "Fine Dining"
     ],
     "box": [
-      "Kraft Wrap",
-      "Gift Ribbon",
-      "Keepsake Tin"
+      "The Farmhouse Box",
+      "The Pantry Box",
+      "The Heirloom Tin"
     ]
   },
   "chefs": [
@@ -531,7 +531,7 @@
       "chefId": null,
       "type": "box",
       "price": 29.0,
-      "description": "Eight cards plus a keepsake tin to hold them in — the full Savourly set, wrapped as a gift.",
+      "description": "Eight cards plus a recipe box of your choice to hold them in — the full Savourly set, wrapped as a gift.",
       "hidden": false
     },
     {

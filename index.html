@@ -393,16 +393,16 @@
   .boxes-page{padding:76px 28px 96px;}
   body:not([data-page="boxes"]) .boxes-page{display:none;}
 
-  .mock-kraft .mock-art{background:linear-gradient(155deg,#B08654,#5C3D22);}
-  .mock-kraft .mock-art svg{stroke:#FFFDF7;}
-  .mock-ribbon .mock-art{background:linear-gradient(135deg,#C4453F,#7C1F1F 55%,#7A1F3A);}
-  .mock-ribbon .mock-art svg{stroke:#FFFDF7;stroke-width:2.2;}
-  .mock-tin .mock-art{background:#20293A;}
-  .mock-tin .mock-art svg{stroke:#B9862B;stroke-width:1.2;}
-  .mock-tin{border:1px solid #B9862B;}
-  .style-kraft .style-preview{background:linear-gradient(155deg,#B08654,#5C3D22);}
-  .style-ribbon .style-preview{background:linear-gradient(135deg,#C4453F,#7C1F1F 55%,#7A1F3A);}
-  .style-tin .style-preview{background:#20293A;border:1px solid #B9862B;}
+  .mock-farmhouse .mock-art{background:linear-gradient(155deg,#A0703F,#5A3A1E);}
+  .mock-farmhouse .mock-art svg{stroke:#FFFDF7;}
+  .mock-pantry .mock-art{background:linear-gradient(155deg,#C9A87A,#8A6A45);}
+  .mock-pantry .mock-art svg{stroke:#FFFDF7;}
+  .mock-heirloom .mock-art{background:#20293A;}
+  .mock-heirloom .mock-art svg{stroke:#B9862B;stroke-width:1.2;}
+  .mock-heirloom{border:1px solid #B9862B;}
+  .style-farmhouse .style-preview{background:linear-gradient(155deg,#A0703F,#5A3A1E);}
+  .style-pantry .style-preview{background:linear-gradient(155deg,#C9A87A,#8A6A45);}
+  .style-heirloom .style-preview{background:#20293A;border:1px solid #B9862B;}
   .checkout-addbox{
     display:flex;align-items:center;gap:12px;width:100%;margin-top:16px;padding:8px 16px 8px 8px;
     background:var(--gold);border:none;border-radius:10px;
@@ -733,7 +733,7 @@
         </div>
         <div class="card-body">
           <h3>Collector's Box</h3>
-          <p class="desc">Eight cards plus a keepsake tin to hold them in — the full Savourly set, wrapped as a gift.</p>
+          <p class="desc">Eight cards plus a recipe box of your choice to hold them in — the full Savourly set, wrapped as a gift.</p>
           <div class="card-foot"><span class="price">£29.00</span><span class="view-cta">Choose style →</span></div>
         </div>
       </div>
@@ -1064,9 +1064,9 @@
   ];
   const BOX_THUMB_ICON = '<svg viewBox="0 0 40 40" fill="none"><rect x="6" y="17" width="28" height="16" rx="1.5" stroke="currentColor" stroke-width="1.6"/><path d="M6 23h28" stroke="currentColor" stroke-width="1.6"/><path d="M6 17l4-6h20l4 6" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M17 11v22" stroke="currentColor" stroke-width="1.3" opacity="0.7"/></svg>';
   const BOX_STYLES = [
-    {id:'kraft', name:'Kraft Wrap'},
-    {id:'ribbon', name:'Gift Ribbon'},
-    {id:'tin', name:'Keepsake Tin'}
+    {id:'farmhouse', name:'The Farmhouse Box'},
+    {id:'pantry', name:'The Pantry Box'},
+    {id:'heirloom', name:'The Heirloom Tin'}
   ];
   const productOverlay = document.getElementById('productOverlay');
   const productBody = document.getElementById('productBody');

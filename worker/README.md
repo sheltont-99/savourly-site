@@ -134,7 +134,7 @@ against real money.
 ```json
 {
   "currency": "gbp", "postage": 1.49,
-  "styles": { "card": ["Classic", "Funky", "Fine Dining"], "box": ["Kraft Wrap", "Gift Ribbon", "Keepsake Tin"] },
+  "styles": { "card": ["Classic", "Funky", "Fine Dining"], "box": ["The Farmhouse Box", "The Pantry Box", "The Heirloom Tin"] },
   "chefs": [ { "id": "CHEF00002", "name": "Luca Ferretti" } ],
   "products": [
     { "id": "PR00053", "name": "Pumpkin Tortelli", "chefId": "CHEF00002", "type": "card",

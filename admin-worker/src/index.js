@@ -14,7 +14,7 @@ function escapeHtml(s) {
 
 // Print-ready PDFs are PRIVATE: they live in the private repo savourly-reports, folder print-files/,
 // one per product and style: print-files/<ID>-<style>.pdf, e.g. print-files/PR00007-fine-dining.pdf
-// (boxes: -kraft-wrap, -gift-ribbon, -keepsake-tin). The PDF link opens /pdf/<file> on this page,
+// (boxes: -the-farmhouse-box, -the-pantry-box, -the-heirloom-tin). The PDF link opens /pdf/<file> on this page,
 // which fetches the file from GitHub with GITHUB_TOKEN, so only people who can log in here can open it.
 const PRINT_DIR = 'print-files';
 function styleSlug(style) { return String(style || '').toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''); }
@@ -47,7 +47,7 @@ function fmtDate(iso) {
 
 const REPORTS_REPO = 'sheltont-99/savourly-reports';
 
-const BOX_STYLES = ['Kraft Wrap', 'Gift Ribbon', 'Keepsake Tin'];
+const BOX_STYLES = ['The Farmhouse Box', 'The Pantry Box', 'The Heirloom Tin', 'Kraft Wrap', 'Gift Ribbon', 'Keepsake Tin']; // old names kept so earlier orders still read as boxes
 
 // ---- London dates ----
 function londonParts(date) {
