@@ -60,7 +60,7 @@ Quick check that each Worker has the right code: the checkout URL should say **"
 - Binding: D1 database `DB` → `savourly-orders`
 - For the weekly report copy on GitHub (optional):
   - A **private** GitHub repo `sheltont-99/savourly-reports`. It must stay private; the Worker refuses to save if it's public.
-  - Secret `GITHUB_TOKEN`: a fine-grained GitHub token for **that repo only**, with *Contents: Read and write* (1-year expiry; renew it when it expires).
+  - Secret `GITHUB_TOKEN`: a fine-grained GitHub token for **that repo only**, with *Contents: Read and write* (1-year expiry). See *Create or renew the GitHub token* below.
   - Cron Trigger `0 7 * * 1` (Settings → Trigger events): Mondays 07:00 UTC, which is 8am in summer and 7am in winter.
 
 **D1 `savourly-orders`**: table `orders` (see `worker/schema.sql`; `posted_at` was added later with `ALTER TABLE orders ADD COLUMN posted_at TEXT;`).
@@ -71,7 +71,30 @@ Quick check that each Worker has the right code: the checkout URL should say **"
   - Events: `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.expired`
   - Payload style: Snapshot
 - No Stripe products or prices are used: every order sends its lines (e.g. `PR00007 · Almighty Chicken Pie — Classic`) directly. Any products made in the Stripe dashboard can be ignored or archived.
-- Test card: 4242 4242 4242 4242, any future date, any CVC. Real cards are declined in test mode.
+- Test cards (test mode only; any future expiry, any CVC, any postcode). Real cards are always declined in test mode.
+  | Card | Number |
+  |---|---|
+  | Visa (credit) | 4242 4242 4242 4242 |
+  | Visa debit | 4000 0566 5566 5556 |
+  | Mastercard debit | 5200 8282 8282 8210 |
+  | Asks for bank verification (3D Secure), then succeeds | 4000 0025 0000 3155 |
+  | Always declined | 4000 0000 0000 0002 |
+
+## Create or renew the GitHub token (for weekly reports)
+
+The key lives in your GitHub **account** settings, not the repo's settings.
+
+1. Open **https://github.com/settings/personal-access-tokens/new**. To get there by clicking: profile picture → **Settings** → bottom of the left menu → **Developer settings** → **Personal access tokens** → **Fine-grained tokens** → **Generate new token**.
+2. Fill in:
+   - **Token name:** `savourly-reports`
+   - **Expiration:** 1 year
+   - **Repository access:** **Only select repositories** → `savourly-reports`
+   - **Permissions:** **Contents** → **Read and write**
+3. Click **Generate token** and copy it (starts `github_pat_`). GitHub only shows it once. Never paste it into chat or into this repo.
+4. Cloudflare → **savourly-admin** → **Settings → Variables and Secrets**: add, or edit, the secret `GITHUB_TOKEN` with that value → Deploy/Save.
+5. Test: admin → **Reports** → *Save last week's report to GitHub now*.
+
+**Renewing:** GitHub emails you before the token expires. When it does, repeat steps 1–5; editing the existing `GITHUB_TOKEN` secret is fine. Until you renew, weekly reports stop saving; everything else keeps working.
 
 ## Everyday tasks
 
