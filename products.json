@@ -124,6 +124,9 @@
       "description": "Chicken, leek and bacon in a tarragon sauce, under a puff pastry lattice — served with Dijon mustard.",
       "thumbnail": "images/PR00007-thumbnail.jpg",
       "preview": "images/PR00007-preview.jpg",
+      "previews": {
+        "funky": "images/PR00007-preview-funky.jpg"
+      },
       "hidden": false
     },
     {
