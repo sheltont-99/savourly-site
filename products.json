@@ -41,6 +41,10 @@
     {
       "id": "CHEF00007",
       "name": "Femi Adegoke"
+    },
+    {
+      "id": "CHEF00008",
+      "name": "Niko Papadakis"
     }
   ],
   "products": [
@@ -101,7 +105,7 @@
     {
       "id": "PR00007",
       "name": "Almighty Chicken Pie",
-      "chefId": "CHEF00001",
+      "chefId": "CHEF00008",
       "type": "card",
       "price": 1.99,
       "description": "Chicken, leek and bacon in a tarragon sauce, under a puff pastry lattice — served with Dijon mustard.",
