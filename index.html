@@ -460,6 +460,10 @@
   .card-body{padding:20px 20px 22px;display:flex;flex-direction:column;gap:10px;flex:1;}
   .card-body h3{font-size:1.15rem;line-height:1.3;}
   .card-body .desc{color:var(--cream-dim);font-size:0.9rem;line-height:1.55;flex:1;}
+  /* fixed tile size: one-line title, 3-line description (4 on phones), "…" if longer */
+  .card-body h3{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .card-body .desc{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden;}
+  @media (max-width:520px){ .card-body .desc{-webkit-line-clamp:4;} }
   .card-foot{display:flex;justify-content:space-between;align-items:center;gap:14px;margin-top:6px;}
   .price{font-family:'Fraunces',serif;font-size:1.15rem;color:var(--gold);}
   .add{
