@@ -12,15 +12,15 @@ function escapeHtml(s) {
   return String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
-// Print-ready PDFs live in a PRIVATE repo (they're what customers pay for), one per
-// product and style: print/<ID>/<ID>-<style>.pdf, e.g. print/PR00007/PR00007-fine-dining.pdf
-const PRINT_REPO = 'sheltont-99/savourly-print-files';
+// Print-ready PDFs sit in the website's images folder, one per product and style:
+// images/<ID>-<style>.pdf, e.g. images/PR00007-fine-dining.pdf (boxes: -kraft-wrap, -gift-ribbon, -keepsake-tin)
+const SITE_URL = 'https://sheltont-99.github.io/savourly-site';
 function styleSlug(style) { return String(style || '').toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''); }
-function pdfPath(id, style) { return `print/${id}/${id}-${styleSlug(style)}.pdf`; }
+function pdfPath(id, style) { return `images/${id}-${styleSlug(style)}.pdf`; }
 function pdfLink(id, style) {
   if (!id || !style) return '';
   const path = pdfPath(id, style);
-  return `<a class="pdf" href="https://github.com/${PRINT_REPO}/blob/main/${encodeURI(path)}" target="_blank" rel="noopener" title="Open ${escapeHtml(path)}">PDF</a>`;
+  return `<a class="pdf" href="${SITE_URL}/${encodeURI(path)}" target="_blank" rel="noopener" title="Open ${escapeHtml(path)}">PDF</a>`;
 }
 
 // An ID with a small copy-to-clipboard button next to it.
