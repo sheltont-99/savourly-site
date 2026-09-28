@@ -936,9 +936,13 @@
   let PRODUCTS = {};      // id -> product
   let PRODUCT_LIST = [];  // in file order (the order cards appear on the site)
   let POSTAGE = 1.49;
+  // The first few photos on a page load straight away (mobile Safari otherwise waits until you've
+  // nearly scrolled to them); the rest stay lazy so chefs with lots of cards don't load everything.
+  const EAGER_PHOTOS = 6;
   function productCardHTML(p, k){
     const art = p.thumbnail
-      ? '<img class="card-photo" src="' + esc(p.thumbnail) + '" alt="" loading="lazy">'
+      ? '<img class="card-photo" src="' + esc(p.thumbnail) + '" alt="" decoding="async"' +
+        (k < EAGER_PHOTOS ? (k < 2 ? ' fetchpriority="high"' : '') : ' loading="lazy"') + '>'
       : (CARD_ART[k % CARD_ART.length] || '');
     return '<div class="card c' + ((k % 7) + 1) + '" data-id="' + esc(p.id) + '" data-price="' + p.price.toFixed(2) + '"' +
         (p.preview ? ' data-preview="' + esc(p.preview) + '"' : '') + '>' +
@@ -947,6 +951,31 @@
       '<div class="card-foot"><span class="price">£' + p.price.toFixed(2) + '</span><span class="view-cta">Choose style →</span></div></div>' +
     '</div>';
   }
+  // Style-picker previews: fetch each card's preview in the background once its tile is on screen
+  // (or the moment it's tapped), so the picker opens with its pictures already loaded.
+  const warmed = new Set();
+  function warmPreview(card){
+    const src = card && card.dataset.preview;
+    if(!src || warmed.has(src)) return;
+    warmed.add(src);
+    const im = new Image();
+    im.fetchPriority = 'low';
+    im.decoding = 'async';
+    im.src = src;
+  }
+  const previewObserver = 'IntersectionObserver' in window
+    ? new IntersectionObserver(entries => entries.forEach(en => {
+        if(en.isIntersecting){ previewObserver.unobserve(en.target); warmPreview(en.target); }
+      }), {rootMargin: '200px'})
+    : null;
+  function warmPreviews(root){
+    root.querySelectorAll('.card[data-preview]').forEach(card =>
+      previewObserver ? previewObserver.observe(card) : warmPreview(card));
+  }
+  document.addEventListener('pointerdown', e => {
+    const card = e.target.closest && e.target.closest('.card[data-preview]');
+    if(card) warmPreview(card);
+  }, {passive: true});
   function chefCardsHTML(chefId){
     const list = PRODUCT_LIST.filter(p => p.chefId === chefId && p.type === 'card' && !p.hidden);
     return list.length ? list.map(productCardHTML).join('') : '<p class="grid-note">New cards coming soon.</p>';
@@ -969,6 +998,7 @@
       PRODUCTS = Object.fromEntries(PRODUCT_LIST.map(p => [p.id, p]));
       if(typeof data.postage === 'number') POSTAGE = data.postage;
       document.getElementById('amaraGrid').innerHTML = chefCardsHTML(CHEFS.find(c => c.handbuilt).id);
+      warmPreviews(document.getElementById('amaraGrid'));
       applyProductList(document);
     })
     .catch(() => {
@@ -1358,6 +1388,7 @@
     ctas[0].setAttribute('href', '#profShop');
     if(ctas[1]){ ctas[1].setAttribute('href', '#profAbout'); ctas[1].textContent = 'Read ' + c.pron + ' story'; }
     shop.querySelector('.grid').innerHTML = chefCardsHTML(c.id);
+    warmPreviews(shop);
     const bundle = shop.querySelector('.bundle');
     if(bundle){
       bundle.querySelector('h3').textContent = 'The full collection — ' + c.total + ' cards';
