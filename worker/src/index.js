@@ -38,10 +38,12 @@ async function loadCatalog(env) {
   const res = await fetch(`${siteUrl}/products.json`, { cf: { cacheTtl: 60, cacheEverything: true } });
   if (!res.ok) throw new Error('Could not load product list');
   const data = await res.json();
+  const hiddenChefs = new Set((data.chefs || []).filter((c) => c.hidden).map((c) => c.id));
   return {
     postage: data.postage,
     styles: data.styles,
-    byId: Object.fromEntries(data.products.map((p) => [p.id, p])),
+    // a hidden chef's cards count as hidden too
+    byId: Object.fromEntries(data.products.map((p) => [p.id, hiddenChefs.has(p.chefId) ? { ...p, hidden: true } : p])),
     chefName: Object.fromEntries((data.chefs || []).map((c) => [c.id, c.name])),
   };
 }

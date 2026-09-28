@@ -513,6 +513,8 @@ async function productsPage(env) {
   ]);
   if (!catRes || !catRes.ok) return shell('products', c, '<div class="empty">Could not load the product list.</div>');
   const cat = await catRes.json();
+  const hiddenChefs = new Set((cat.chefs || []).filter((ch) => ch.hidden).map((ch) => ch.id));
+  cat.products.forEach((p) => { if (hiddenChefs.has(p.chefId)) p.hidden = true; }); // a hidden chef hides all their cards
   const hiddenCount = cat.products.filter((p) => p.hidden).length;
   const sold = Object.fromEntries(soldRes.results.filter((r) => r.id).map((r) => [r.id, r.sold]));
   c.products = cat.products.length;
@@ -526,8 +528,8 @@ async function productsPage(env) {
     groups.get(key).push(p);
   });
   const body = `<input class="search" id="q" placeholder="Search by ID, recipe or chef…" autocomplete="off">
-    <p class="hint"><b>Hidden</b> ✓ = not showing on the website (${hiddenCount} hidden). To hide or show a product, ask Claude with its ID. Tap a style under a product to open its print PDF (faded = not added yet). Tap <svg class="ic" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg> to copy an ID.</p>` +
-    [...groups].filter(([, list]) => list.length).map(([chefId, list]) => `<section class="group"><h2>${chefId ? `${escapeHtml(chefName[chefId] || 'Unknown chef')} ${idTag(chefId)}` : 'Recipe boxes'}</h2>
+    <p class="hint"><b>Hidden</b> ✓ = not showing on the website (${hiddenCount} hidden). To hide or show a product or a whole chef (with all their cards), ask Claude with its ID. Tap a style under a product to open its print PDF (faded = not added yet). Tap <svg class="ic" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg> to copy an ID.</p>` +
+    [...groups].filter(([, list]) => list.length).map(([chefId, list]) => `<section class="group"><h2>${chefId ? `${escapeHtml(chefName[chefId] || 'Unknown chef')} ${idTag(chefId)}${hiddenChefs.has(chefId) ? ' <span class="hid">Chef hidden</span>' : ''}` : 'Recipe boxes'}</h2>
       <div class="prow phead"><span>Hidden</span><span>ID</span><span>Product</span><span>Price</span><span>Sold</span></div>` +
       list.map((p) => `<div class="prow${p.hidden ? ' is-hidden' : ''}" data-q="${escapeHtml(`${p.id} ${p.name} ${chefId} ${chefName[chefId] || 'recipe boxes'}`.toLowerCase())}">
         <span class="hbox${p.hidden ? ' on' : ''}" role="img" aria-label="${p.hidden ? 'Hidden' : 'On site'}" title="${p.hidden ? 'Hidden from the website' : 'Showing on the website'}">${p.hidden ? '✓' : ''}</span>

@@ -182,15 +182,14 @@
   }
   .product-add:hover{background:#a5761f;}
   .product-add:disabled{opacity:0.5;cursor:not-allowed;}
-  .product-actions{display:flex;gap:10px;}
-  .product-actions .product-add{flex:1;}
   .product-link{
-    flex:none;width:48px;display:flex;align-items:center;justify-content:center;
-    background:transparent;border:1px solid rgba(32,41,58,0.2);border-radius:10px;color:var(--cream);cursor:pointer;
+    position:absolute;top:14px;right:48px;width:30px;height:30px;display:flex;align-items:center;justify-content:center;
+    background:none;border:none;color:var(--cream-dim);cursor:pointer;
   }
-  .product-link:hover{border-color:var(--cream);}
-  .product-link svg{flex:none;width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
-  .product-link.copied{border-color:var(--gold);color:var(--gold);}
+  .product-modal h3{padding-right:64px;}
+  .product-link:hover{color:var(--cream);}
+  .product-link svg{flex:none;width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
+  .product-link.copied{color:var(--gold);}
 
   /* ---------- CHECKOUT MODAL ---------- */
   .checkout-overlay{
@@ -863,6 +862,7 @@
     // names starting with the query first, then any other name/cuisine match
     const starts = [], contains = [];
     CHEFS.forEach((c, i) => {
+      if(c.hidden) return;
       const n = c.name.toLowerCase(), cu = c.cuisine.toLowerCase();
       if(n.startsWith(q) || n.split(' ').some(w => w.startsWith(q))) starts.push(i);
       else if(n.includes(q) || cu.includes(q)) contains.push(i);
@@ -921,7 +921,7 @@
     let shown = 0;
     document.querySelectorAll('.chef-card').forEach(card => {
       const c = CHEFS[+card.dataset.i];
-      const hit = !q || c.name.toLowerCase().includes(q) || c.cuisine.toLowerCase().includes(q);
+      const hit = !c.hidden && (!q || c.name.toLowerCase().includes(q) || c.cuisine.toLowerCase().includes(q));
       card.hidden = !hit; if(hit) shown++;
     });
     const empty = document.getElementById('chefsEmpty');
@@ -1003,6 +1003,11 @@
   const productsReady = fetch('products.json', {cache:'no-cache'})
     .then(r => r.ok ? r.json() : Promise.reject(new Error('products.json ' + r.status)))
     .then(data => {
+      // Hidden chefs (products.json "chefs": hidden true) disappear with all their cards
+      const hiddenChefs = new Set((data.chefs || []).filter(c => c.hidden).map(c => c.id));
+      CHEFS.forEach(c => { c.hidden = hiddenChefs.has(c.id); });
+      data.products.forEach(p => { if(hiddenChefs.has(p.chefId)) p.hidden = true; });
+      filterGrid('');
       PRODUCT_LIST = data.products;
       PRODUCTS = Object.fromEntries(PRODUCT_LIST.map(p => [p.id, p]));
       if(typeof data.postage === 'number') POSTAGE = data.postage;
@@ -1159,10 +1164,8 @@
             '</button>'
           ).join('') +
         '</div>' +
-        '<div class="product-actions">' +
-          (isBox ? '' : '<button class="product-link" id="productLink" type="button" aria-label="Share this card" title="Share this card">' + SHARE_ICON + '</button>') +
-          '<button class="product-add" id="productAdd" type="button">Add to cart — £' + price.toFixed(2) + '</button>' +
-        '</div>';
+        '<button class="product-add" id="productAdd" type="button">Add to cart — £' + price.toFixed(2) + '</button>' +
+        (isBox ? '' : '<button class="product-link" id="productLink" type="button" aria-label="Share this card" title="Share this card">' + SHARE_ICON + '</button>');
 
       const linkBtn = document.getElementById('productLink');
       if(linkBtn) linkBtn.addEventListener('click', shareCard);
@@ -1455,7 +1458,7 @@
     else if(hash.startsWith('#card/')){ page = 'amara'; recipe = hash.slice(6); }
     else if(hash.startsWith('#chef/')){
       const bits = hash.slice(6).split('/');
-      idx = CHEFS.findIndex(c => c.slug === bits[0]);
+      idx = CHEFS.findIndex(c => c.slug === bits[0] && !c.hidden);
       if(idx >= 0 && CHEFS[idx].handbuilt){ page = 'amara'; recipe = bits[1] || null; }
       else if(idx >= 0){ page = 'chef'; chef = CHEFS[idx]; recipe = bits[1] || null; }
     }

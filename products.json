@@ -16,39 +16,48 @@
   "chefs": [
     {
       "id": "CHEF00001",
-      "name": "Amara Osei"
+      "name": "Amara Osei",
+      "hidden": false
     },
     {
       "id": "CHEF00002",
-      "name": "Luca Ferretti"
+      "name": "Luca Ferretti",
+      "hidden": false
     },
     {
       "id": "CHEF00003",
-      "name": "Priya Nair"
+      "name": "Priya Nair",
+      "hidden": false
     },
     {
       "id": "CHEF00004",
-      "name": "Soo-Jin Baek"
+      "name": "Soo-Jin Baek",
+      "hidden": false
     },
     {
       "id": "CHEF00005",
-      "name": "Mateo Rivas"
+      "name": "Mateo Rivas",
+      "hidden": false
     },
     {
       "id": "CHEF00006",
-      "name": "Camille Aubert"
+      "name": "Camille Aubert",
+      "hidden": false
     },
     {
       "id": "CHEF00007",
-      "name": "Femi Adegoke"
+      "name": "Femi Adegoke",
+      "hidden": false
     },
     {
       "id": "CHEF00008",
-      "name": "Niko Papadakis"
+      "name": "Niko Papadakis",
+      "hidden": false
     },
     {
       "id": "CHEF00009",
-      "name": "Alfie Cooks"
+      "name": "Alfie Cooks",
+      "hidden": false
     }
   ],
   "products": [
