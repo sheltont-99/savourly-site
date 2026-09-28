@@ -426,6 +426,10 @@ function shell(view, c, body) {
   .ref{display:inline-flex;align-items:center;gap:2px}
   .pdf{display:inline-block;margin-left:8px;padding:1px 7px;border:1px solid #d9cfbb;border-radius:5px;font-size:.72rem;font-weight:700;letter-spacing:.03em;color:#8A5A2B;text-decoration:none;vertical-align:1px}
   .pdf:hover{background:#8A5A2B;color:#fff;border-color:#8A5A2B}
+  .pdfs{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+  .pdfs .pdf{margin-left:0;font-weight:600;white-space:nowrap}
+  .pdf.off{color:#b8b0a2;border-style:dashed;cursor:default}
+  .pdf.off:hover{background:none;color:#b8b0a2;border-color:#d9cfbb}
   .group h2{display:flex;align-items:center;gap:10px}
   .group h2 .pid{font-size:.75rem}
   .pad{padding:18px 22px}
@@ -469,14 +473,39 @@ function shell(view, c, body) {
 </body></html>`, { headers: { 'content-type': 'text/html;charset=utf-8', 'cache-control': 'no-store' } });
 }
 
+// Names of the files in print-files/ (a Set), or null if they can't be listed (no token / GitHub error).
+async function printFileNames(env) {
+  if (!env.GITHUB_TOKEN) return null;
+  try {
+    const root = await gh(env, '/contents/');
+    if (!root.ok) return null;
+    const dir = (await root.json()).find((e) => e.name === PRINT_DIR && e.type === 'dir');
+    if (!dir) return new Set();
+    const tree = await gh(env, `/git/trees/${dir.sha}`);
+    if (!tree.ok) return null;
+    return new Set((await tree.json()).tree.filter((e) => e.type === 'blob').map((e) => e.path));
+  } catch { return null; }
+}
+
+// One small tag per style: a link when the file exists, faded when it hasn't been added yet.
+function pdfTags(id, styles, files) {
+  if (!styles || !styles.length) return '';
+  return `<span class="pdfs">` + styles.map((st) => {
+    const file = pdfFile(id, st);
+    if (files && !files.has(file)) return `<span class="pdf off" title="Not added yet: ${escapeHtml(PRINT_DIR + '/' + file)}">${escapeHtml(st)}</span>`;
+    return `<a class="pdf" href="/pdf/${encodeURIComponent(file)}" target="_blank" rel="noopener" title="Open ${escapeHtml(PRINT_DIR + '/' + file)}">${escapeHtml(st)}</a>`;
+  }).join('') + `</span>`;
+}
+
 async function productsPage(env) {
-  const [catRes, c, soldRes] = await Promise.all([
+  const [catRes, c, soldRes, files] = await Promise.all([
     fetch(PRODUCTS_URL, { cf: { cacheTtl: 30, cacheEverything: true } }).catch(() => null),
     counts(env),
     env.DB.prepare(
       `SELECT json_extract(j.value,'$.id') AS id, SUM(json_extract(j.value,'$.qty')) AS sold
        FROM orders o, json_each(o.items_json) j WHERE o.status='paid' GROUP BY 1`
     ).all(),
+    printFileNames(env),
   ]);
   if (!catRes || !catRes.ok) return shell('products', c, '<div class="empty">Could not load the product list.</div>');
   const cat = await catRes.json();
@@ -493,12 +522,12 @@ async function productsPage(env) {
     groups.get(key).push(p);
   });
   const body = `<input class="search" id="q" placeholder="Search by ID, recipe or chef…" autocomplete="off">
-    <p class="hint"><b>Hidden</b> ✓ = not showing on the website (${hiddenCount} hidden). To hide or show a product, ask Claude with its ID. Tap <svg class="ic" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg> to copy an ID.</p>` +
+    <p class="hint"><b>Hidden</b> ✓ = not showing on the website (${hiddenCount} hidden). To hide or show a product, ask Claude with its ID. Tap a style under a product to open its print PDF (faded = not added yet). Tap <svg class="ic" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg> to copy an ID.</p>` +
     [...groups].filter(([, list]) => list.length).map(([chefId, list]) => `<section class="group"><h2>${chefId ? `${escapeHtml(chefName[chefId] || 'Unknown chef')} ${idTag(chefId)}` : 'Recipe boxes'}</h2>
       <div class="prow phead"><span>Hidden</span><span>ID</span><span>Product</span><span>Price</span><span>Sold</span></div>` +
       list.map((p) => `<div class="prow${p.hidden ? ' is-hidden' : ''}" data-q="${escapeHtml(`${p.id} ${p.name} ${chefId} ${chefName[chefId] || 'recipe boxes'}`.toLowerCase())}">
         <span class="hbox${p.hidden ? ' on' : ''}" role="img" aria-label="${p.hidden ? 'Hidden' : 'On site'}" title="${p.hidden ? 'Hidden from the website' : 'Showing on the website'}">${p.hidden ? '✓' : ''}</span>
-        ${idTag(p.id)}<span>${escapeHtml(p.name)}${p.hidden ? ' <span class="hid">Hidden</span>' : ''}</span><span>£${Number(p.price).toFixed(2)}</span>
+        ${idTag(p.id)}<span>${escapeHtml(p.name)}${p.hidden ? ' <span class="hid">Hidden</span>' : ''}${pdfTags(p.id, (cat.styles || {})[p.type], files)}</span><span>£${Number(p.price).toFixed(2)}</span>
         <span class="sold">${sold[p.id] ? `<b>${sold[p.id]} sold</b>` : '0 sold'}</span></div>`).join('') +
       `</section>`).join('') +
     `<script>

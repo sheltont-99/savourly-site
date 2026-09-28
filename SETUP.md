@@ -22,7 +22,7 @@ This repo is public. Nothing here is secret; keys and passwords live only in Clo
 | Website | `index.html` in this repo → https://sheltont-99.github.io/savourly-site/ | Shop, chef pages, cart, checkout form. Builds every card from `products.json`. |
 | Product list | `products.json` (+ photos in `images/`) | The only place products live: IDs, names, chefs, prices, descriptions, hidden flags, postage. |
 | Checkout | Cloudflare Worker **savourly-checkout** → https://savourly-checkout.shelts-tom.workers.dev (shows "Not found" in a browser; that's normal) | Prices the cart from `products.json`, creates the Stripe payment page, saves the order, marks it paid when Stripe confirms. Must stay public. |
-| Order log | Cloudflare Worker **savourly-admin** → https://savourly-admin.shelts-tom.workers.dev | Your private page: To post / Posted / All / Products (IDs, prices, sales, Hidden column; view only) / Reports (Excel downloads, weekly email). Locked with Cloudflare Access (email one-time code). |
+| Order log | Cloudflare Worker **savourly-admin** → https://savourly-admin.shelts-tom.workers.dev | Your private page: To post / Posted / All / Products (IDs, prices, sales, Hidden column, a print-PDF button per style; view only) / Reports (Excel downloads, weekly email). Locked with Cloudflare Access (email one-time code). |
 | Database | Cloudflare D1 **savourly-orders** | Every order: ref, customer, address, items (product ID, name, style, qty, price), totals, paid/posted times. |
 | Payments | Stripe (currently **test mode / sandbox**) | Takes the money; holds card details; sends "paid" webhooks. |
 
@@ -98,7 +98,7 @@ Boxes use the styles `kraft-wrap`, `gift-ribbon` and `keepsake-tin` (e.g. `print
 
 - **Adding files:** send them to Claude with the product ID and style. Print PDFs must **never** go in this public repo, only in `savourly-reports/print-files/`. Uploading one yourself on GitHub is fine too (savourly-reports → `print-files` → **Add file → Upload files**), but then ask Claude to refresh the previews.
 - **Previews:** `tools/make_previews.py` reads the Fine Dining PDFs from `../savourly-reports/print-files/` (clone both repos side by side), writes the public `images/<ID>-preview.jpg`, and sets `"preview"`. Claude runs it whenever a Fine Dining PDF is added or replaced; there's no GitHub Action for it any more, because the PDFs aren't in this repo.
-- **Order log:** each order line's **PDF** link opens `/pdf/<ID>-<style>.pdf` on the admin page. That page is behind your Cloudflare login and fetches the file from the private repo using the `GITHUB_TOKEN` secret. "Print file not added yet" means the file isn't in `print-files/`, or its name doesn't match.
+- **Order log:** each order line's **PDF** link, and the style buttons under each product on the **Products** tab (faded = not added yet), open `/pdf/<ID>-<style>.pdf` on the admin page. That page is behind your Cloudflare login and fetches the file from the private repo using the `GITHUB_TOKEN` secret. "Print file not added yet" means the file isn't in `print-files/`, or its name doesn't match.
 - **Card maker:** `savourly-reports/card-maker/` (private) holds your PowerPoint templates (Fine Dining so far), each card's recipe and photo, the filled editable PowerPoints, and the script that builds the PDFs. See its README.
 - **Old copies:** until 28 Sep 2026 print PDFs sat in this repo's `images/`. They've been moved, but older versions stay visible in this repo's GitHub history.
 
