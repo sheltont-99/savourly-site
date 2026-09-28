@@ -33,7 +33,7 @@ New orders are numbered `OID000001`, `OID000002`, … (a running number, chosen 
 ## Where order data lives
 
 - **All order data is in Cloudflare D1 `savourly-orders`** (table `orders`): order ref, dates, customer name, email and delivery address, items (product ID, chef ID, style, qty, price), totals, and paid/posted status. Cloudflare encrypts it at rest and in transit.
-- **Never in this repo.** It's public and only holds the website and product list. Weekly Excel copies go only to the separate **private** repo `savourly-reports`.
+- **Never in this repo.** It's public and only holds the website, product list and product photos. Weekly Excel copies (and the print PDFs) go only to the separate **private** repo `savourly-reports`.
 - **No card details anywhere of ours.** Customers enter them on Stripe's page; Stripe holds them.
 - **Who can reach it:** the Cloudflare account login; the admin page (behind the email-code login); and the checkout Worker, which can only add orders and mark them paid and has no way to read them back out.
 - **Backups:** D1 Time Travel restores to any point in recent days (about 7 on the free plan). There is no off-site copy yet.
@@ -58,9 +58,9 @@ Quick check that each Worker has the right code: the checkout URL should say **"
 
 **savourly-admin**: Access protection **on (All traffic)**, allowed email = owner's.
 - Binding: D1 database `DB` → `savourly-orders`
-- For the weekly report copy on GitHub (optional):
-  - A **private** GitHub repo `sheltont-99/savourly-reports`. It must stay private; the Worker refuses to save if it's public.
-  - Secret `GITHUB_TOKEN`: a fine-grained GitHub token for **that repo only**, with *Contents: Read and write* (1-year expiry). See *Create or renew the GitHub token* below.
+- For the print-file **PDF** links and the weekly report copy on GitHub:
+  - A **private** GitHub repo `sheltont-99/savourly-reports` (`print-files/`, `reports/`, `card-maker/`). It must stay private; the Worker refuses to save reports if it's public.
+  - Secret `GITHUB_TOKEN`: a fine-grained GitHub token for **that repo only**, with *Contents: Read and write* (1-year expiry). See *Create or renew the GitHub token* below. Without it the PDF links show "PDFs not set up".
   - Cron Trigger `0 7 * * 1` (Settings → Trigger events): Mondays 07:00 UTC, which is 8am in summer and 7am in winter.
 
 **D1 `savourly-orders`**: table `orders` (see `worker/schema.sql`; `posted_at` was added later with `ALTER TABLE orders ADD COLUMN posted_at TEXT;`).
@@ -82,27 +82,27 @@ Quick check that each Worker has the right code: the checkout URL should say **"
 
 ## Product images and print files
 
-Every product's files sit in the website's `images` folder, named after its product ID.
-
 **Each recipe card has 5 files: 2 images (JPG) and 3 PDFs.** You supply 4 of them (the thumbnail photo and the Classic, Funky and Fine Dining PDFs); the 5th, the preview image, is made automatically from the Fine Dining PDF. Recipe boxes have 3 PDFs only (no thumbnail or preview).
 
-Like everything in this repo they're public: anyone with the address can download them.
+**The images are public; the print PDFs are private.**
 
-| File | What it is | How it gets there |
-|---|---|---|
-| `images/PR00007-thumbnail.jpg` | Photo on the product card (`"thumbnail"` in `products.json`) | You provide it (Claude adds it) |
-| `images/PR00007-classic.pdf` | Print file, Classic style | You provide it |
-| `images/PR00007-funky.pdf` | Print file, Funky style | You provide it |
-| `images/PR00007-fine-dining.pdf` | Print file, Fine Dining style | You provide it |
-| `images/PR00007-preview.jpg` | Picture of the card shown in the style pop-up (`"preview"`) | **Made automatically** from page 1 of the Fine Dining PDF |
+| File | Where | What it is | How it gets there |
+|---|---|---|---|
+| `PR00007-thumbnail.jpg` | this repo, `images/` (public) | Photo on the product card (`"thumbnail"` in `products.json`) | You provide it (Claude adds it) |
+| `PR00007-preview.jpg` | this repo, `images/` (public) | Picture of the card shown in the style pop-up (`"preview"`) | **Made automatically** from page 1 of the Fine Dining PDF |
+| `PR00007-classic.pdf` | private repo `savourly-reports`, `print-files/` | Print file, Classic style | You provide it |
+| `PR00007-funky.pdf` | private repo `savourly-reports`, `print-files/` | Print file, Funky style | You provide it |
+| `PR00007-fine-dining.pdf` | private repo `savourly-reports`, `print-files/` | Print file, Fine Dining style | You provide it, or Claude makes it from the recipe with your PowerPoint template (`savourly-reports/card-maker/`) |
 
-Boxes use the styles `kraft-wrap`, `gift-ribbon` and `keepsake-tin` (e.g. `images/PR00051-keepsake-tin.pdf`). File names must match exactly: lower-case style, spaces become hyphens. Without a thumbnail the card shows a drawn icon.
+Boxes use the styles `kraft-wrap`, `gift-ribbon` and `keepsake-tin` (e.g. `print-files/PR00051-keepsake-tin.pdf`). File names must match exactly: lower-case style, spaces become hyphens. Without a thumbnail the card shows a drawn icon.
 
-- **Adding files:** send them to Claude with the product ID and style, or on GitHub open `images/` → **Add file → Upload files** → drag them in → **Commit**. They're live within about 2 minutes.
-- **Previews:** `tools/make_previews.py` renders `<ID>-fine-dining.pdf` into `<ID>-preview.jpg` and sets `"preview"`. The GitHub Action *Make card previews from Fine Dining PDFs* (`.github/workflows/previews.yml`) runs it automatically whenever a Fine Dining PDF is uploaded; it can also be run by hand from the repo's **Actions** tab.
-- **Order log:** each order line's **PDF** link opens that product's PDF in the customer's style. A "404" means that file hasn't been added yet or its name doesn't match.
+- **Adding files:** send them to Claude with the product ID and style. Print PDFs must **never** go in this public repo, only in `savourly-reports/print-files/`. Uploading one yourself on GitHub is fine too (savourly-reports → `print-files` → **Add file → Upload files**), but then ask Claude to refresh the previews.
+- **Previews:** `tools/make_previews.py` reads the Fine Dining PDFs from `../savourly-reports/print-files/` (clone both repos side by side), writes the public `images/<ID>-preview.jpg`, and sets `"preview"`. Claude runs it whenever a Fine Dining PDF is added or replaced; there's no GitHub Action for it any more, because the PDFs aren't in this repo.
+- **Order log:** each order line's **PDF** link opens `/pdf/<ID>-<style>.pdf` on the admin page. That page is behind your Cloudflare login and fetches the file from the private repo using the `GITHUB_TOKEN` secret. "Print file not added yet" means the file isn't in `print-files/`, or its name doesn't match.
+- **Card maker:** `savourly-reports/card-maker/` (private) holds your PowerPoint templates (Fine Dining so far), each card's recipe and photo, the filled editable PowerPoints, and the script that builds the PDFs. See its README.
+- **Old copies:** until 28 Sep 2026 print PDFs sat in this repo's `images/`. They've been moved, but older versions stay visible in this repo's GitHub history.
 
-## Create or renew the GitHub token (for weekly reports)
+## Create or renew the GitHub token (for PDF links and weekly reports)
 
 The key lives in your GitHub **account** settings, not the repo's settings.
 
@@ -116,7 +116,7 @@ The key lives in your GitHub **account** settings, not the repo's settings.
 4. Cloudflare → **savourly-admin** → **Settings → Variables and Secrets**: add, or edit, the secret `GITHUB_TOKEN` with that value → Deploy/Save.
 5. Test: admin → **Reports** → *Save last week's report to GitHub now*.
 
-**Renewing:** GitHub emails you before the token expires. When it does, repeat steps 1–5; editing the existing `GITHUB_TOKEN` secret is fine. Until you renew, weekly reports stop saving; everything else keeps working.
+**Renewing:** GitHub emails you before the token expires. When it does, repeat steps 1–5; editing the existing `GITHUB_TOKEN` secret is fine. Until you renew, the order log's PDF links stop opening and weekly reports stop saving; everything else keeps working.
 
 ## Everyday tasks
 
@@ -127,8 +127,9 @@ The key lives in your GitHub **account** settings, not the repo's settings.
 | Add, edit, re-price, reorder products | Edit `products.json` (ask Claude, which uses the *savourly-product-manager* skill) |
 | Change postage | `postage` in `products.json` |
 | Check a payment | Order row → *View in Stripe* |
-| Print a product | Order row → **PDF** next to the product (opens `images/<ID>-<style>.pdf`) |
+| Print a product | Order row → **PDF** next to the product (opens the private `print-files/<ID>-<style>.pdf` through your login) |
 | Add product photos / print PDFs | Send them to Claude with the product ID (and style for PDFs); see *Product images and print files* |
+| Make a Fine Dining card from a recipe | Paste the recipe (text or a picture) to Claude, which uses the *savourly-recipe-card-pdf-creator* skill |
 | Excel report | Admin → **Reports** → *Last week* / *This week so far* / *All orders*; weekly copies in the private repo `savourly-reports/reports/<year>/` |
 
 ID rules: products are `PR` + 5 digits, chefs are `CHEF` + 5 digits (listed under `chefs` in `products.json`, and on each chef's `CHEFS` entry in `index.html`). The next number is always the highest + 1, and IDs are never changed or reused. Products are hidden (`"hidden": true`), not deleted.

@@ -12,15 +12,17 @@ function escapeHtml(s) {
   return String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
-// Print-ready PDFs sit in the website's images folder, one per product and style:
-// images/<ID>-<style>.pdf, e.g. images/PR00007-fine-dining.pdf (boxes: -kraft-wrap, -gift-ribbon, -keepsake-tin)
-const SITE_URL = 'https://sheltont-99.github.io/savourly-site';
+// Print-ready PDFs are PRIVATE: they live in the private repo savourly-reports, folder print-files/,
+// one per product and style: print-files/<ID>-<style>.pdf, e.g. print-files/PR00007-fine-dining.pdf
+// (boxes: -kraft-wrap, -gift-ribbon, -keepsake-tin). The PDF link opens /pdf/<file> on this page,
+// which fetches the file from GitHub with GITHUB_TOKEN, so only people who can log in here can open it.
+const PRINT_DIR = 'print-files';
 function styleSlug(style) { return String(style || '').toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''); }
-function pdfPath(id, style) { return `images/${id}-${styleSlug(style)}.pdf`; }
+function pdfFile(id, style) { return `${id}-${styleSlug(style)}.pdf`; }
 function pdfLink(id, style) {
   if (!id || !style) return '';
-  const path = pdfPath(id, style);
-  return `<a class="pdf" href="${SITE_URL}/${encodeURI(path)}" target="_blank" rel="noopener" title="Open ${escapeHtml(path)}">PDF</a>`;
+  const file = pdfFile(id, style);
+  return `<a class="pdf" href="/pdf/${encodeURIComponent(file)}" target="_blank" rel="noopener" title="Open ${escapeHtml(PRINT_DIR + '/' + file)}">PDF</a>`;
 }
 
 // An ID with a small copy-to-clipboard button next to it.
@@ -244,6 +246,7 @@ async function gh(env, path, init = {}) {
       Accept: 'application/vnd.github+json',
       'User-Agent': 'savourly-admin',
       ...(init.body ? { 'content-type': 'application/json' } : {}),
+      ...(init.headers || {}),
     },
   });
 }
@@ -521,6 +524,21 @@ async function setPosted(request, env, posted) {
   return Response.redirect(new URL(`/?view=${view}`, request.url).toString(), 303);
 }
 
+// Streams a print PDF from the private repo. Only reachable through Cloudflare Access (see fetch()).
+async function printPdf(env, file) {
+  const note = (title, msg, status) => new Response(`<!doctype html><meta charset="utf-8"><title>${escapeHtml(title)}</title><body style="font:16px system-ui;padding:2rem;max-width:40rem"><h1 style="font-size:1.2rem">${escapeHtml(title)}</h1><p>${msg}</p></body>`, { status, headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' } });
+  if (!env.GITHUB_TOKEN) return note('PDFs not set up', 'This page needs the <b>GITHUB_TOKEN</b> secret (the same one the weekly report uses) to open print files.', 503);
+  const res = await gh(env, `/contents/${PRINT_DIR}/${file}`, { headers: { Accept: 'application/vnd.github.raw' } });
+  if (res.status === 404) return note('Print file not added yet', `There's no <b>${escapeHtml(PRINT_DIR + '/' + file)}</b> in the private ${escapeHtml(REPORTS_REPO)} repo yet. Send it to Claude with the product ID and style.`, 404);
+  if (!res.ok) return note("Couldn't open the print file", `GitHub said ${res.status}. Check the GITHUB_TOKEN secret still works and can read ${escapeHtml(REPORTS_REPO)}.`, 502);
+  return new Response(res.body, { headers: {
+    'content-type': 'application/pdf',
+    'content-disposition': `inline; filename="${file}"`,
+    'cache-control': 'private, no-store',
+    'x-content-type-options': 'nosniff',
+  } });
+}
+
 export default {
   async fetch(request, env) {
     // Seatbelt: Cloudflare Access adds this header to every request it lets through.
@@ -531,6 +549,8 @@ export default {
     const url = new URL(request.url);
     if (request.method === 'POST' && url.pathname === '/post') return setPosted(request, env, true);
     if (request.method === 'POST' && url.pathname === '/unpost') return setPosted(request, env, false);
+    const pdf = url.pathname.match(/^\/pdf\/(PR\d{5}-[a-z0-9]+(?:-[a-z0-9]+)*\.pdf)$/);
+    if (request.method === 'GET' && pdf) return printPdf(env, pdf[1]);
     if (request.method === 'GET' && url.pathname === '/report.xlsx') {
       const range = ['last', 'this', 'all'].includes(url.searchParams.get('range')) ? url.searchParams.get('range') : 'last';
       const data = await reportData(env, range);

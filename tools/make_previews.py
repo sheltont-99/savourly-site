@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 """Make each product's style-picker preview from its Fine Dining print PDF.
 
-For every product in products.json that has images/<ID>-fine-dining.pdf, render page 1
-to images/<ID>-preview.jpg (720px wide) and set "preview" in products.json.
-Previews are only remade when the PDF is newer than the existing preview.
-Needs `pdftoppm` (poppler-utils) and Pillow. Run from the repo root:
-    python3 tools/make_previews.py
+Print PDFs are private: they live in the private repo savourly-reports, folder print-files/.
+For every product in products.json that has <pdf-dir>/<ID>-fine-dining.pdf, render page 1
+to images/<ID>-preview.jpg (720px wide, public) and set "preview" in products.json.
+Previews are only remade when the PDF is newer than the existing preview (or with --force).
+Needs `pdftoppm` (poppler-utils) and Pillow. Run from the savourly-site repo root, with
+savourly-reports cloned next to it:
+    python3 tools/make_previews.py [--force] [--pdf-dir ../savourly-reports/print-files]
 """
 import json, os, subprocess, sys, tempfile
 
@@ -15,12 +17,21 @@ WIDTH = 720
 SOURCE_STYLE = 'fine-dining'  # previews are made from this style's PDF
 
 
+def pdf_dir():
+    if '--pdf-dir' in sys.argv:
+        return sys.argv[sys.argv.index('--pdf-dir') + 1]
+    return os.path.join('..', 'savourly-reports', 'print-files')
+
+
 def main():
+    src = pdf_dir()
+    if not os.path.isdir(src):
+        sys.exit(f"Can't find the private print files folder {src}. Clone sheltont-99/savourly-reports next to this repo, or pass --pdf-dir.")
     with open('products.json', encoding='utf-8') as f:
         cat = json.load(f)
     changed, made = False, []
     for p in cat['products']:
-        pdf = f"images/{p['id']}-{SOURCE_STYLE}.pdf"
+        pdf = os.path.join(src, f"{p['id']}-{SOURCE_STYLE}.pdf")
         jpg = f"images/{p['id']}-preview.jpg"
         if not os.path.exists(pdf):
             continue
