@@ -436,7 +436,7 @@
   .shop-head h2{font-size:1.9rem;}
   .shop-head p{color:var(--cream-dim);max-width:40ch;margin-top:8px;}
 
-  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:26px;}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,324px);gap:26px;}
   .card{
     background:var(--indigo);border:1px solid rgba(32,41,58,0.12);
     border-radius:12px;cursor:pointer;
@@ -446,7 +446,7 @@
   .card:hover{transform:translateY(-3px);box-shadow:0 16px 30px -14px rgba(32,41,58,0.25);}
   .view-cta{font-size:0.82rem;color:var(--gold);font-weight:600;white-space:nowrap;}
   .card-art{
-    aspect-ratio:5/4;position:relative;
+    aspect-ratio:5/4;position:relative;overflow:hidden;min-height:0;
     display:flex;align-items:center;justify-content:center;
   }
   .card-art .num{
