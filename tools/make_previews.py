@@ -3,7 +3,7 @@
 
 The main preview (images/<ID>-preview.jpg, "preview" in products.json) comes from the Fine Dining PDF.
 Other card styles get their own preview when their PDF exists: images/<ID>-preview-<style-slug>.jpg,
-listed under "previews" in products.json (e.g. {"funky": "images/PR00053-preview-funky.jpg"}); the
+listed under "previews" in products.json (e.g. {"vibrant": "images/PR00053-preview-vibrant.jpg"}); the
 style picker shows it when that style is chosen, and falls back to the main preview otherwise.
 
 Print PDFs are private: they live in the private repo savourly-reports, folder print-files/.

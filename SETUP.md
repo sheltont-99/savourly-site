@@ -96,7 +96,7 @@ Quick check that each Worker has the right code: the checkout URL should say **"
 
 ## Product images and print files
 
-**Each recipe card has 5 files: 2 images (JPG) and 3 PDFs.** You supply 4 of them (the thumbnail photo and the Classic, Funky and Fine Dining PDFs); the 5th, the preview image, is made automatically from the Fine Dining PDF. Recipe boxes have 3 PDFs only (no thumbnail or preview).
+**Each recipe card has 5 files: 2 images (JPG) and 3 PDFs.** You supply 4 of them (the thumbnail photo and the Classic, Vibrant and Fine Dining PDFs); the 5th, the preview image, is made automatically from the Fine Dining PDF. Recipe boxes have 3 PDFs only (no thumbnail or preview).
 
 **The images are public; the print PDFs are private.**
 
@@ -105,7 +105,7 @@ Quick check that each Worker has the right code: the checkout URL should say **"
 | `PR00007-thumbnail.jpg` | this repo, `images/` (public) | Photo on the product card (`"thumbnail"` in `products.json`) | You provide it (Claude adds it) |
 | `PR00007-preview.jpg` | this repo, `images/` (public) | Picture of the card shown in the style pop-up (`"preview"`) | **Made automatically** from page 1 of the Fine Dining PDF |
 | `PR00007-classic.pdf` | private repo `savourly-reports`, `print-files/` | Print file, Classic style | You provide it |
-| `PR00007-funky.pdf` | private repo `savourly-reports`, `print-files/` | Print file, Funky style | You provide it |
+| `PR00007-vibrant.pdf` | private repo `savourly-reports`, `print-files/` | Print file, Vibrant style | You provide it |
 | `PR00007-fine-dining.pdf` | private repo `savourly-reports`, `print-files/` | Print file, Fine Dining style | You provide it, or Claude makes it from the recipe with your PowerPoint template (`savourly-reports/card-maker/`) |
 
 Boxes use the styles `the-farmhouse-box`, `the-pantry-box` and `the-heirloom-tin` (e.g. `print-files/PR00051-the-heirloom-tin.pdf`). File names must match exactly: lower-case style, spaces become hyphens. Without a thumbnail the card shows a drawn icon.

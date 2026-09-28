@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS orders (
   customer_name TEXT,
   customer_email TEXT,
   shipping_address TEXT,
-  items_json TEXT NOT NULL,                 -- [{"name":"Kelewele — Funky","price":3.50,"qty":1}, ...]
+  items_json TEXT NOT NULL,                 -- [{"name":"Kelewele — Vibrant","price":3.50,"qty":1}, ...]
   subtotal REAL,
   postage REAL,
   total REAL,

@@ -146,9 +146,9 @@
   .mock-classic .mock-art svg{stroke:#F2EAD9;}
   .mock-classic{background:var(--indigo);border:1px solid rgba(32,41,58,0.12);}
 
-  .mock-funky .mock-art{background:#F8F3E8;}
-  .mock-funky .mock-art svg{stroke:#1F4E9C;stroke-width:1.8;}
-  .mock-funky{background:#1F4E9C;}
+  .mock-vibrant .mock-art{background:#F8F3E8;}
+  .mock-vibrant .mock-art svg{stroke:#1F4E9C;stroke-width:1.8;}
+  .mock-vibrant{background:#1F4E9C;}
 
   .mock-fine .mock-art{background:#141C29;}
   .mock-fine .mock-art svg{stroke:#B9862B;stroke-width:1.2;}
@@ -172,7 +172,7 @@
   .style-name{display:block;font-size:0.8rem;font-weight:600;color:var(--cream);text-align:center;}
 
   .style-classic .style-preview{background:linear-gradient(155deg,#8A4A2A,#3A2318);}
-  .style-funky .style-preview{background:#F8F3E8;border:1px solid #1F4E9C;}
+  .style-vibrant .style-preview{background:#F8F3E8;border:1px solid #1F4E9C;}
   .style-fine .style-preview{background:#141C29;border:1px solid #B9862B;}
 
   .product-add{
@@ -1058,7 +1058,7 @@
   // Product modal (recipe detail + style picker)
   const STYLES = [
     {id:'classic', name:'Classic'},
-    {id:'funky', name:'Funky'},
+    {id:'vibrant', name:'Vibrant'},
     {id:'fine', name:'Fine Dining'}
   ];
   const BOX_THUMB_ICON = '<svg viewBox="0 0 40 40" fill="none"><rect x="6" y="17" width="28" height="16" rx="1.5" stroke="currentColor" stroke-width="1.6"/><path d="M6 23h28" stroke="currentColor" stroke-width="1.6"/><path d="M6 17l4-6h20l4 6" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M17 11v22" stroke="currentColor" stroke-width="1.3" opacity="0.7"/></svg>';
@@ -1132,7 +1132,7 @@
     // the rest show the main (Fine Dining) preview.
     let stylePreviews = {};
     try { stylePreviews = JSON.parse(card.dataset.previews || '{}'); } catch(e){}
-    const STYLE_SLUG = {classic:'classic', funky:'funky', fine:'fine-dining'};
+    const STYLE_SLUG = {classic:'classic', vibrant:'vibrant', fine:'fine-dining'};
     const previewFor = id => (styleSet.find(s => s.id === id) || {}).img || stylePreviews[STYLE_SLUG[id]] || cardPreviewImg;
     const mediaFor = id => previewFor(id)
       ? '<img class="mock-photo" src="' + esc(previewFor(id)) + '" alt=""' + (isBox ? ' style="object-position:center"' : '') + '>'
