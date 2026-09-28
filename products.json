@@ -509,7 +509,7 @@
     },
     {
       "id": "PR00050",
-      "name": "Starter Box",
+      "name": "The Taster Set",
       "chefId": null,
       "type": "box",
       "price": 12.0,
@@ -518,7 +518,7 @@
     },
     {
       "id": "PR00051",
-      "name": "Chef's Choice Box",
+      "name": "The Chef's Table Set",
       "chefId": null,
       "type": "box",
       "price": 18.0,
@@ -527,7 +527,7 @@
     },
     {
       "id": "PR00052",
-      "name": "Collector's Box",
+      "name": "The Collector's Set",
       "chefId": null,
       "type": "box",
       "price": 29.0,
