@@ -124,7 +124,7 @@ The key lives in your GitHub **account** settings, not the repo's settings.
 |---|---|
 | See / post orders | Admin page → **To post** → *Mark as posted* |
 | Hide / unhide a product | Ask Claude with the product ID (e.g. "hide PR00010"); IDs are in the admin **Products** tab |
-| Add, edit, re-price, reorder products | Edit `products.json` (ask Claude, which uses the *savourly-products* skill) |
+| Add, edit, re-price, reorder products | Edit `products.json` (ask Claude, which uses the *savourly-product-manager* skill) |
 | Change postage | `postage` in `products.json` |
 | Check a payment | Order row → *View in Stripe* |
 | Print a product | Order row → **PDF** next to the product (opens `images/<ID>-<style>.pdf`) |
