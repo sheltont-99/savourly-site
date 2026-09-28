@@ -547,6 +547,20 @@
         "funky": "images/PR00053-preview-funky.jpg"
       },
       "hidden": false
+    },
+    {
+      "id": "PR00054",
+      "name": "Pad Thai Salad",
+      "chefId": "CHEF00009",
+      "type": "card",
+      "price": 1.99,
+      "description": "All the best parts of a Pad Thai, kept plant-based, slightly lighter and thrown into a salad.",
+      "thumbnail": "images/PR00054-thumbnail.jpg",
+      "preview": "images/PR00054-preview.jpg",
+      "previews": {
+        "funky": "images/PR00054-preview-funky.jpg"
+      },
+      "hidden": false
     }
   ]
 }
