@@ -67,7 +67,7 @@ Quick check that each Worker has the right code: the checkout URL should say **"
 | Change postage | `postage` in `products.json` |
 | Check a payment | Order row → *View in Stripe* |
 
-Product ID rules: `PR` + 5 digits, next number = highest + 1, never changed or reused; hide instead of deleting.
+ID rules: products are `PR` + 5 digits, chefs are `CHEF` + 5 digits (listed under `chefs` in `products.json`, and on each chef's `CHEFS` entry in `index.html`). The next number is always the highest + 1, and IDs are never changed or reused. Products are hidden (`"hidden": true`), not deleted.
 
 ## Going live (real payments), when ready
 

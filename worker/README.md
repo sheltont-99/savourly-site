@@ -129,19 +129,22 @@ against real money.
 
 ## Products and IDs
 
-`products.json` at the root of the site is the **only** place products live. Each entry:
+`products.json` at the root of the site is the **only** place products live:
 
 ```json
-{ "id": "PR00053", "name": "Pumpkin Tortelli", "chef": "Luca Ferretti", "type": "card",
-  "price": 1.99, "description": "…", "photo": "images/PR00053.jpg", "hidden": false }
+{
+  "currency": "gbp", "postage": 1.49,
+  "styles": { "card": ["Classic", "Funky", "Fine Dining"], "box": ["Kraft Wrap", "Gift Ribbon", "Keepsake Tin"] },
+  "chefs": [ { "id": "CHEF00002", "name": "Luca Ferretti" } ],
+  "products": [
+    { "id": "PR00053", "name": "Pumpkin Tortelli", "chefId": "CHEF00002", "type": "card",
+      "price": 1.99, "description": "…", "photo": "images/PR00053.jpg", "hidden": false }
+  ]
+}
 ```
 
-- `id` is permanent. Never change or reuse it, because past orders refer to it.
-- `chef` must match the chef's name exactly; the card appears on that chef's page.
-- Cards appear in the order they're listed in the file.
-- `photo` (optional) is a picture in `images/`; without one, the card gets a drawn icon.
-- `preview` (optional) is the picture shown on the card in the style picker.
-- `hidden: true` removes it from the site and checkout but keeps its ID and sales history.
+- `id` (PR00001…) and chef `id` (CHEF00001…) are permanent. Never change or reuse them, because past orders refer to them.
+- `chefId` links a card to its chef (`null` for boxes). The chef's page content (bio etc.) is the matching `CHEFS` entry in `index.html`, which carries the same `id`.
+- Cards appear in the order they're listed. `hidden: true` removes a product from the site and checkout but keeps its ID and sales history.
 
-The website, the checkout Worker (prices) and the admin page (Products tab) all read this file,
-so no Worker code changes are needed to add, hide or re-price products.
+The website, the checkout Worker (prices) and the admin page (Products tab) all read this file.

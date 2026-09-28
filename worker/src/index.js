@@ -42,6 +42,7 @@ async function loadCatalog(env) {
     postage: data.postage,
     styles: data.styles,
     byId: Object.fromEntries(data.products.map((p) => [p.id, p])),
+    chefName: Object.fromEntries((data.chefs || []).map((c) => [c.id, c.name])),
   };
 }
 
@@ -103,7 +104,7 @@ async function handleCreateCheckoutSession(request, env) {
     if (!p || !styleOk || !Number.isInteger(qty) || qty < 1 || qty > MAX_QTY_PER_LINE) {
       return json({ error: `Unrecognised cart item: ${String(i?.id).slice(0, 40)}` }, 400);
     }
-    items.push({ id: p.id, name: p.name, style: i.style, chef: p.chef || null, price: p.price, qty });
+    items.push({ id: p.id, name: p.name, style: i.style, chefId: p.chefId || null, chef: catalog.chefName[p.chefId] || null, price: p.price, qty });
   }
 
   const postage = catalog.postage;

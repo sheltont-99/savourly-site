@@ -12,6 +12,12 @@ function escapeHtml(s) {
   return String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
+// An ID with a small copy-to-clipboard button next to it.
+function idTag(id) {
+  const v = escapeHtml(id);
+  return `<span class="idw"><code class="pid">${v}</code><button type="button" class="cp" data-copy="${v}" title="Copy ${v}" aria-label="Copy ${v}"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg></button></span>`;
+}
+
 function fmtDate(iso) {
   if (!iso) return '';
   const d = new Date(iso);
@@ -59,8 +65,8 @@ async function page(env, view) {
       : posted ? `<span class="pill pill-posted">Posted ${escapeHtml(fmtDate(o.posted_at))}</span>` : `<span class="pill pill-paid">Paid</span>`;
 
     return `<article class="order">
-      <div class="top"><strong>${escapeHtml(o.order_ref)}</strong><span class="dim">${escapeHtml(fmtDate(o.created_at))}</span>${badge}</div>
-      <ul class="items">${items.map((i) => `<li><span>${i.id ? `<code class="pid">${escapeHtml(i.id)}</code>` : ''}${escapeHtml(i.style ? `${i.name} — ${i.style}` : i.name)}</span><b>× ${Number(i.qty)}</b></li>`).join('')}</ul>
+      <div class="top"><strong class="ref">${escapeHtml(o.order_ref)}<button type="button" class="cp" data-copy="${escapeHtml(o.order_ref)}" title="Copy ${escapeHtml(o.order_ref)}" aria-label="Copy ${escapeHtml(o.order_ref)}"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg></button></strong><span class="dim">${escapeHtml(fmtDate(o.created_at))}</span>${badge}</div>
+      <ul class="items">${items.map((i) => `<li><span>${i.id ? idTag(i.id) : ''}${escapeHtml(i.style ? `${i.name} — ${i.style}` : i.name)}</span><b>× ${Number(i.qty)}</b></li>`).join('')}</ul>
       <div class="addr"><b>${escapeHtml(o.customer_name)}</b><br>${escapeHtml(o.shipping_address)}<br><span class="dim">${escapeHtml(o.customer_email)}</span></div>
       <div class="foot"><span class="total">£${Number(o.total).toFixed(2)}</span>${stripe}${action}</div>
     </article>`;
@@ -117,17 +123,29 @@ function shell(view, c, body) {
   .search{width:100%;font:inherit;font-size:16px;padding:11px 14px;border:1px solid #e5dfd2;border-radius:10px;background:#fff}
   .group{background:#fff;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.07);overflow:hidden}
   .group h2{font-size:.95rem;margin:0;padding:12px 16px;background:#f7f3ea}
-  .prow{display:grid;grid-template-columns:64px 96px minmax(0,1fr) 80px 80px;gap:16px;align-items:center;padding:12px 22px;border-top:1px solid #f1ede4;font-size:.95rem}
+  .prow{display:grid;grid-template-columns:64px 128px minmax(0,1fr) 80px 80px;gap:16px;align-items:center;padding:12px 22px;border-top:1px solid #f1ede4;font-size:.95rem}
   .prow > span:nth-child(4),.prow > span:nth-child(5){text-align:right}
   .phead{padding-top:8px;padding-bottom:8px;font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:#9ca3af;background:#fcfbf7}
   .hbox{width:20px;height:20px;border:2px solid #cfc6b3;border-radius:5px;display:inline-flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:700;color:#fff;margin-left:10px}
   .hbox.on{background:#8b93a1;border-color:#8b93a1}
   .v-products main{max-width:1100px}
-  @media (max-width:600px){.prow{grid-template-columns:50px 78px minmax(0,1fr) 46px 50px;gap:8px;padding:10px 12px;font-size:.88rem}.phead{font-size:.6rem;letter-spacing:.02em}.hbox{margin-left:10px}}
+  @media (max-width:600px){.prow{grid-template-columns:44px 108px minmax(0,1fr) 44px 46px;gap:8px;padding:10px 12px;font-size:.88rem}.phead{font-size:.6rem;letter-spacing:.02em}.hbox{margin-left:10px}}
   .prow .sold{color:#6b7280;font-size:.82rem}
   .prow .sold b{color:#166534}
   .prow.is-hidden > span:not(.hbox),.prow.is-hidden .pid{opacity:.55}
   .hint{margin:0;color:#6b7280;font-size:.85rem}
+  .idw{display:inline-flex;align-items:center;gap:2px;white-space:nowrap;vertical-align:middle}
+  .idw .pid{margin-right:0}
+  .cp{border:0;background:none;padding:3px;margin:0 6px 0 0;border-radius:5px;cursor:pointer;color:#b3a78e;display:inline-flex;vertical-align:middle}
+  .cp:hover{background:#f3efe6;color:#8A5A2B}
+  .cp svg,.ic{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .ic{width:13px;height:13px;vertical-align:-2px;color:#8A5A2B}
+  .cp.ok{color:#166534}
+  .cp.ok svg{display:none}
+  .cp.ok::after{content:'✓';font-size:.8rem;font-weight:700;line-height:15px;width:15px;text-align:center}
+  .ref{display:inline-flex;align-items:center;gap:2px}
+  .group h2{display:flex;align-items:center;gap:10px}
+  .group h2 .pid{font-size:.75rem}
   .hid{font-size:.72rem;font-weight:600;background:#f3f4f6;color:#6b7280;border-radius:99px;padding:2px 8px;margin-left:6px}
   /* Orders views: wide, one thin row per order on bigger screens */
   .v-orders main{max-width:1280px}
@@ -146,6 +164,15 @@ function shell(view, c, body) {
 </style></head><body class="${view === 'products' ? 'v-products' : 'v-orders'}">
 <header><h1>Savourly orders</h1><nav class="tabs">${tabs(view, c)}</nav></header>
 <main>${body}</main>
+<script>
+  document.addEventListener('click', async (e) => {
+    const b = e.target.closest('.cp'); if (!b) return;
+    const text = b.dataset.copy;
+    try { await navigator.clipboard.writeText(text); }
+    catch (_) { const t = document.createElement('textarea'); t.value = text; t.style.position = 'fixed'; t.style.opacity = '0'; document.body.appendChild(t); t.select(); document.execCommand('copy'); t.remove(); }
+    b.classList.add('ok'); b.title = 'Copied'; setTimeout(() => { b.classList.remove('ok'); b.title = 'Copy ' + text; }, 1200);
+  });
+</script>
 </body></html>`, { headers: { 'content-type': 'text/html;charset=utf-8', 'cache-control': 'no-store' } });
 }
 
@@ -164,23 +191,29 @@ async function productsPage(env) {
   const sold = Object.fromEntries(soldRes.results.filter((r) => r.id).map((r) => [r.id, r.sold]));
   c.products = cat.products.length;
 
-  const groups = {};
-  cat.products.forEach((p) => { (groups[p.chef || 'Recipe boxes'] ||= []).push(p); });
+  const chefName = Object.fromEntries((cat.chefs || []).map((ch) => [ch.id, ch.name]));
+  const groups = new Map();
+  (cat.chefs || []).forEach((ch) => groups.set(ch.id, []));
+  cat.products.forEach((p) => {
+    const key = p.chefId || '';
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(p);
+  });
   const body = `<input class="search" id="q" placeholder="Search by ID, recipe or chef…" autocomplete="off">
-    <p class="hint"><b>Hidden</b> ✓ = not showing on the website (${hiddenCount} hidden). To hide or show a product, ask Claude with its ID.</p>` +
-    Object.entries(groups).map(([chef, list]) => `<section class="group"><h2>${escapeHtml(chef)}</h2>
+    <p class="hint"><b>Hidden</b> ✓ = not showing on the website (${hiddenCount} hidden). To hide or show a product, ask Claude with its ID. Tap <svg class="ic" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg> to copy an ID.</p>` +
+    [...groups].filter(([, list]) => list.length).map(([chefId, list]) => `<section class="group"><h2>${chefId ? `${escapeHtml(chefName[chefId] || 'Unknown chef')} ${idTag(chefId)}` : 'Recipe boxes'}</h2>
       <div class="prow phead"><span>Hidden</span><span>ID</span><span>Product</span><span>Price</span><span>Sold</span></div>` +
-      list.map((p) => `<div class="prow${p.hidden ? ' is-hidden' : ''}" data-q="${escapeHtml(`${p.id} ${p.name} ${chef}`.toLowerCase())}">
+      list.map((p) => `<div class="prow${p.hidden ? ' is-hidden' : ''}" data-q="${escapeHtml(`${p.id} ${p.name} ${chefId} ${chefName[chefId] || 'recipe boxes'}`.toLowerCase())}">
         <span class="hbox${p.hidden ? ' on' : ''}" role="img" aria-label="${p.hidden ? 'Hidden' : 'On site'}" title="${p.hidden ? 'Hidden from the website' : 'Showing on the website'}">${p.hidden ? '✓' : ''}</span>
-        <code class="pid">${escapeHtml(p.id)}</code><span>${escapeHtml(p.name)}${p.hidden ? ' <span class="hid">Hidden</span>' : ''}</span><span>£${Number(p.price).toFixed(2)}</span>
+        ${idTag(p.id)}<span>${escapeHtml(p.name)}${p.hidden ? ' <span class="hid">Hidden</span>' : ''}</span><span>£${Number(p.price).toFixed(2)}</span>
         <span class="sold">${sold[p.id] ? `<b>${sold[p.id]} sold</b>` : '0 sold'}</span></div>`).join('') +
       `</section>`).join('') +
     `<script>
       const q = document.getElementById('q');
       q.addEventListener('input', () => {
         const v = q.value.trim().toLowerCase();
-        document.querySelectorAll('.prow').forEach(r => r.style.display = r.dataset.q.includes(v) ? '' : 'none');
-        document.querySelectorAll('.group').forEach(g => g.style.display = [...g.querySelectorAll('.prow')].some(r => r.style.display !== 'none') ? '' : 'none');
+        document.querySelectorAll('.prow[data-q]').forEach(r => r.style.display = r.dataset.q.includes(v) ? '' : 'none');
+        document.querySelectorAll('.group').forEach(g => g.style.display = [...g.querySelectorAll('.prow[data-q]')].some(r => r.style.display !== 'none') ? '' : 'none');
       });
     </script>`;
   return shell('products', c, body);
