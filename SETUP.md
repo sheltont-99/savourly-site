@@ -82,7 +82,11 @@ Quick check that each Worker has the right code: the checkout URL should say **"
 
 ## Product images and print files
 
-Every product's files sit in the website's `images` folder, named after its product ID. Like everything in this repo they're public: anyone with the address can download them.
+Every product's files sit in the website's `images` folder, named after its product ID.
+
+**Each recipe card has 5 files: 2 images (JPG) and 3 PDFs.** You supply 4 of them (the thumbnail photo and the Classic, Funky and Fine Dining PDFs); the 5th, the preview image, is made automatically from the Fine Dining PDF. Recipe boxes have 3 PDFs only (no thumbnail or preview).
+
+Like everything in this repo they're public: anyone with the address can download them.
 
 | File | What it is | How it gets there |
 |---|---|---|
