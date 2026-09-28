@@ -58,6 +58,11 @@
       "id": "CHEF00009",
       "name": "Alfie Cooks",
       "hidden": false
+    },
+    {
+      "id": "CHEF00010",
+      "name": "Carlos Hardwick",
+      "hidden": false
     }
   ],
   "products": [
@@ -561,6 +566,15 @@
         "funky": "images/PR00054-preview-funky.jpg"
       },
       "hidden": false
+    },
+    {
+      "id": "PR00055",
+      "name": "Broccoli & Stilton Soup",
+      "chefId": "CHEF00010",
+      "type": "card",
+      "price": 1.99,
+      "description": "A silky broccoli soup finished with crumbled stilton — simple, warming and ready in under an hour.",
+      "hidden": true
     }
   ]
 }

@@ -817,7 +817,12 @@
       bio:"Alfie Cooks writes and shoots every recipe from his own kitchen, chasing the big, familiar flavours of a takeaway without losing the ease of a weeknight dinner. Each card below is a single recipe, tested for a home stove and written the way he'd explain it to you at the counter.",
       aboutH:"Big flavours, built to fit a weeknight.",
       aboutP:["Alfie tests every recipe in his own kitchen before it goes on the page, working out the shortcuts — the air fryer instead of the grill, a shop-bought harissa instead of a jar you'd have to make — that get a proper plate of food on the table without the fuss.","Every card is one dish, one method, written in full. Buy what you want to cook this week."],
-      stats:[["15","recipe cards published"],["3 yrs","home cooking on Substack"],["1","cookbook in progress"]], total:15, bundle:29}
+      stats:[["15","recipe cards published"],["3 yrs","home cooking on Substack"],["1","cookbook in progress"]], total:15, bundle:29},
+    {id:"CHEF00010", name:"Carlos Hardwick", cuisine:"Home cooking", role:"Chef", pron:"his", photo:"images/CHEF00010-portrait.jpg",
+      bio:"Carlos Hardwick cooks simple, warming food for everyday kitchens. Each card below is a single recipe, tested for a home stove and written the way he'd explain it to you.",
+      aboutH:"Simple, warming food for every day.",
+      aboutP:["Carlos keeps his recipes short and honest: a handful of good ingredients, one pan where possible, and nothing you'd need to hunt for.", "More of his cards are on the way."],
+      stats:[["1","recipe card published"],["2026","joined Savourly"],["More","cards on the way"]], total:1, bundle:1.99}
   ];
   CHEFS.forEach(c => { c.slug = c.name.toLowerCase().replace(/[^a-z]+/g,'-').replace(/^-|-$/g,''); });
   function chefHref(c){ return '#chef/' + c.slug; }
