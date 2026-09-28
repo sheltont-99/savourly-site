@@ -1,11 +1,11 @@
-name: Make card previews from Classic PDFs
+name: Make card previews from Fine Dining PDFs
 
-# When a Classic print PDF is added or replaced in images/, render its first page
+# When a Fine Dining print PDF is added or replaced in images/, render its first page
 # to images/<ID>-preview.jpg and point products.json at it.
 on:
   push:
     branches: [main]
-    paths: ['images/*-classic.pdf']
+    paths: ['images/*-fine-dining.pdf']
   workflow_dispatch:
 
 permissions:
@@ -25,11 +25,11 @@ jobs:
       - name: Make previews
         # Git checkouts don't keep file dates, so rebuild previews for the PDFs changed in this push.
         run: |
-          for f in $(git diff --name-only ${{ github.event.before }} ${{ github.sha }} -- 'images/*-classic.pdf' 2>/dev/null); do touch "$f"; done
+          for f in $(git diff --name-only ${{ github.event.before }} ${{ github.sha }} -- 'images/*-fine-dining.pdf' 2>/dev/null); do touch "$f"; done
           python3 tools/make_previews.py $([ "${{ github.event_name }}" = "workflow_dispatch" ] && echo --force)
       - name: Save them
         run: |
           git config user.name "savourly-previews"
           git config user.email "actions@users.noreply.github.com"
           git add images/*-preview.jpg products.json
-          git diff --cached --quiet || (git commit -m "Update card previews from Classic PDFs" && git push)
+          git diff --cached --quiet || (git commit -m "Update card previews from Fine Dining PDFs" && git push)

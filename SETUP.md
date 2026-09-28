@@ -90,12 +90,12 @@ Every product's files sit in the website's `images` folder, named after its prod
 | `images/PR00007-classic.pdf` | Print file, Classic style | You provide it |
 | `images/PR00007-funky.pdf` | Print file, Funky style | You provide it |
 | `images/PR00007-fine-dining.pdf` | Print file, Fine Dining style | You provide it |
-| `images/PR00007-preview.jpg` | Picture of the card shown in the style pop-up (`"preview"`) | **Made automatically** from page 1 of the Classic PDF |
+| `images/PR00007-preview.jpg` | Picture of the card shown in the style pop-up (`"preview"`) | **Made automatically** from page 1 of the Fine Dining PDF |
 
 Boxes use the styles `kraft-wrap`, `gift-ribbon` and `keepsake-tin` (e.g. `images/PR00051-keepsake-tin.pdf`). File names must match exactly: lower-case style, spaces become hyphens. Without a thumbnail the card shows a drawn icon.
 
 - **Adding files:** send them to Claude with the product ID and style, or on GitHub open `images/` → **Add file → Upload files** → drag them in → **Commit**. They're live within about 2 minutes.
-- **Previews:** `tools/make_previews.py` renders `<ID>-classic.pdf` into `<ID>-preview.jpg` and sets `"preview"`. The GitHub Action *Make card previews from Classic PDFs* (`.github/workflows/previews.yml`) runs it automatically whenever a Classic PDF is uploaded; it can also be run by hand from the repo's **Actions** tab.
+- **Previews:** `tools/make_previews.py` renders `<ID>-fine-dining.pdf` into `<ID>-preview.jpg` and sets `"preview"`. The GitHub Action *Make card previews from Fine Dining PDFs* (`.github/workflows/previews.yml`) runs it automatically whenever a Fine Dining PDF is uploaded; it can also be run by hand from the repo's **Actions** tab.
 - **Order log:** each order line's **PDF** link opens that product's PDF in the customer's style. A "404" means that file hasn't been added yet or its name doesn't match.
 
 ## Create or renew the GitHub token (for weekly reports)

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Make each product's style-picker preview from its Classic print PDF.
+"""Make each product's style-picker preview from its Fine Dining print PDF.
 
-For every product in products.json that has images/<ID>-classic.pdf, render page 1
+For every product in products.json that has images/<ID>-fine-dining.pdf, render page 1
 to images/<ID>-preview.jpg (720px wide) and set "preview" in products.json.
 Previews are only remade when the PDF is newer than the existing preview.
 Needs `pdftoppm` (poppler-utils) and Pillow. Run from the repo root:
@@ -12,6 +12,7 @@ import json, os, subprocess, sys, tempfile
 from PIL import Image
 
 WIDTH = 720
+SOURCE_STYLE = 'fine-dining'  # previews are made from this style's PDF
 
 
 def main():
@@ -19,7 +20,7 @@ def main():
         cat = json.load(f)
     changed, made = False, []
     for p in cat['products']:
-        pdf = f"images/{p['id']}-classic.pdf"
+        pdf = f"images/{p['id']}-{SOURCE_STYLE}.pdf"
         jpg = f"images/{p['id']}-preview.jpg"
         if not os.path.exists(pdf):
             continue
