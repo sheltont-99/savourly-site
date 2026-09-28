@@ -925,12 +925,12 @@
   let PRODUCT_LIST = [];  // in file order (the order cards appear on the site)
   let POSTAGE = 1.49;
   function productCardHTML(p, k){
-    const art = p.photo
-      ? '<img class="card-photo" src="' + esc(p.photo) + '" alt="" loading="lazy">'
+    const art = p.thumbnail
+      ? '<img class="card-photo" src="' + esc(p.thumbnail) + '" alt="" loading="lazy">'
       : (CARD_ART[k % CARD_ART.length] || '');
     return '<div class="card c' + ((k % 7) + 1) + '" data-id="' + esc(p.id) + '" data-price="' + p.price.toFixed(2) + '"' +
         (p.preview ? ' data-preview="' + esc(p.preview) + '"' : '') + '>' +
-      '<div class="card-art' + (p.photo ? ' photo-art' : '') + '"><span class="num">' + String(k + 1).padStart(2, '0') + '</span>' + art + '</div>' +
+      '<div class="card-art' + (p.thumbnail ? ' photo-art' : '') + '"><span class="num">' + String(k + 1).padStart(2, '0') + '</span>' + art + '</div>' +
       '<div class="card-body"><h3>' + esc(p.name) + '</h3><p class="desc">' + esc(p.description || '') + '</p>' +
       '<div class="card-foot"><span class="price">£' + p.price.toFixed(2) + '</span><span class="view-cta">Choose style →</span></div></div>' +
     '</div>';

@@ -105,8 +105,8 @@
       "type": "card",
       "price": 1.99,
       "description": "Chicken, leek and bacon in a tarragon sauce, under a puff pastry lattice — served with Dijon mustard.",
-      "photo": "images/PR00007.jpg",
-      "preview": "images/PR00007-card.jpg",
+      "thumbnail": "images/PR00007-thumbnail.jpg",
+      "preview": "images/PR00007-preview.jpg",
       "hidden": false
     },
     {

@@ -80,22 +80,23 @@ Quick check that each Worker has the right code: the checkout URL should say **"
   | Asks for bank verification (3D Secure), then succeeds | 4000 0025 0000 3155 |
   | Always declined | 4000 0000 0000 0002 |
 
-## Print files (PDFs)
+## Product images and print files
 
-The print-ready PDF for every product **and style** sits in the website's `images` folder, next to the product photos. Each product line in the admin order log has a **PDF** link that opens the matching file from the live site. Like everything in this repo, these files are public: anyone with the address can download them.
+Every product's files sit in the website's `images` folder, named after its product ID. Like everything in this repo they're public: anyone with the address can download them.
 
-Files must follow this naming pattern exactly (lower-case style, spaces become hyphens):
+| File | What it is | How it gets there |
+|---|---|---|
+| `images/PR00007-thumbnail.jpg` | Photo on the product card (`"thumbnail"` in `products.json`) | You provide it (Claude adds it) |
+| `images/PR00007-classic.pdf` | Print file, Classic style | You provide it |
+| `images/PR00007-funky.pdf` | Print file, Funky style | You provide it |
+| `images/PR00007-fine-dining.pdf` | Print file, Fine Dining style | You provide it |
+| `images/PR00007-preview.jpg` | Picture of the card shown in the style pop-up (`"preview"`) | **Made automatically** from page 1 of the Classic PDF |
 
-```
-images/<product ID>-<style>.pdf
+Boxes use the styles `kraft-wrap`, `gift-ribbon` and `keepsake-tin` (e.g. `images/PR00051-keepsake-tin.pdf`). File names must match exactly: lower-case style, spaces become hyphens. Without a thumbnail the card shows a drawn icon.
 
-images/PR00007-classic.pdf
-images/PR00007-funky.pdf
-images/PR00007-fine-dining.pdf
-images/PR00051-keepsake-tin.pdf      (boxes: kraft-wrap, gift-ribbon, keepsake-tin)
-```
-
-To add them, send them to Claude with the product ID, or on GitHub open `images/` → **Add file → Upload files** → drag the PDFs in → **Commit**. They go live within about 2 minutes. If a PDF link shows a "404" page, that file hasn't been added yet or its name doesn't match the pattern.
+- **Adding files:** send them to Claude with the product ID and style, or on GitHub open `images/` → **Add file → Upload files** → drag them in → **Commit**. They're live within about 2 minutes.
+- **Previews:** `tools/make_previews.py` renders `<ID>-classic.pdf` into `<ID>-preview.jpg` and sets `"preview"`. The GitHub Action *Make card previews from Classic PDFs* (`.github/workflows/previews.yml`) runs it automatically whenever a Classic PDF is uploaded; it can also be run by hand from the repo's **Actions** tab.
+- **Order log:** each order line's **PDF** link opens that product's PDF in the customer's style. A "404" means that file hasn't been added yet or its name doesn't match.
 
 ## Create or renew the GitHub token (for weekly reports)
 
@@ -123,6 +124,7 @@ The key lives in your GitHub **account** settings, not the repo's settings.
 | Change postage | `postage` in `products.json` |
 | Check a payment | Order row → *View in Stripe* |
 | Print a product | Order row → **PDF** next to the product (opens `images/<ID>-<style>.pdf`) |
+| Add product photos / print PDFs | Send them to Claude with the product ID (and style for PDFs); see *Product images and print files* |
 | Excel report | Admin → **Reports** → *Last week* / *This week so far* / *All orders*; weekly copies in the private repo `savourly-reports/reports/<year>/` |
 
 ID rules: products are `PR` + 5 digits, chefs are `CHEF` + 5 digits (listed under `chefs` in `products.json`, and on each chef's `CHEFS` entry in `index.html`). The next number is always the highest + 1, and IDs are never changed or reused. Products are hidden (`"hidden": true`), not deleted.
