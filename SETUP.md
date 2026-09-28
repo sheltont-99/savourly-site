@@ -26,6 +26,15 @@ This repo is public. Nothing here is secret; keys and passwords live only in Clo
 | Database | Cloudflare D1 **savourly-orders** | Every order: ref, customer, address, items (product ID, name, style, qty, price), totals, paid/posted times. |
 | Payments | Stripe (currently **test mode / sandbox**) | Takes the money; holds card details; sends "paid" webhooks. |
 
+## Where order data lives
+
+- **All order data is in Cloudflare D1 `savourly-orders`** (table `orders`): order ref, dates, customer name, email and delivery address, items (product ID, chef ID, style, qty, price), totals, and paid/posted status. Cloudflare encrypts it at rest and in transit.
+- **Never in this repo.** It's public and only holds the website and product list.
+- **No card details anywhere of ours.** Customers enter them on Stripe's page; Stripe holds them.
+- **Who can reach it:** the Cloudflare account login; the admin page (behind the email-code login); and the checkout Worker, which can only add orders and mark them paid and has no way to read them back out.
+- **Backups:** D1 Time Travel restores to any point in recent days (about 7 on the free plan). There is no off-site copy yet.
+- **Keep it safe:** two-step login on Cloudflare, Stripe and GitHub.
+
 ## Source code → where it's pasted
 
 Cloudflare doesn't deploy from this repo automatically. After changing Worker code here, paste it into the matching Worker (**Edit code** → select all → paste → **Deploy**):
