@@ -146,9 +146,9 @@
   .mock-classic .mock-art svg{stroke:#F2EAD9;}
   .mock-classic{background:var(--indigo);border:1px solid rgba(32,41,58,0.12);}
 
-  .mock-funky .mock-art{background:linear-gradient(135deg,#FF6B6B,#FFD93D 55%,#4ECDC4);}
-  .mock-funky .mock-art svg{stroke:#141C29;stroke-width:2.4;}
-  .mock-funky{background:#141C29;}
+  .mock-funky .mock-art{background:#F8F3E8;}
+  .mock-funky .mock-art svg{stroke:#1F4E9C;stroke-width:1.8;}
+  .mock-funky{background:#1F4E9C;}
 
   .mock-fine .mock-art{background:#141C29;}
   .mock-fine .mock-art svg{stroke:#B9862B;stroke-width:1.2;}
@@ -172,7 +172,7 @@
   .style-name{display:block;font-size:0.8rem;font-weight:600;color:var(--cream);text-align:center;}
 
   .style-classic .style-preview{background:linear-gradient(155deg,#8A4A2A,#3A2318);}
-  .style-funky .style-preview{background:linear-gradient(135deg,#FF6B6B,#FFD93D 55%,#4ECDC4);}
+  .style-funky .style-preview{background:#F8F3E8;border:1px solid #1F4E9C;}
   .style-fine .style-preview{background:#141C29;border:1px solid #B9862B;}
 
   .product-add{
@@ -944,7 +944,8 @@
         (k < EAGER_PHOTOS ? (k < 2 ? ' fetchpriority="high"' : '') : ' loading="lazy"') + '>'
       : (CARD_ART[k % CARD_ART.length] || '');
     return '<div class="card c' + ((k % 7) + 1) + '" data-id="' + esc(p.id) + '" data-price="' + p.price.toFixed(2) + '"' +
-        (p.preview ? ' data-preview="' + esc(p.preview) + '"' : '') + '>' +
+        (p.preview ? ' data-preview="' + esc(p.preview) + '"' : '') +
+        (p.previews ? ' data-previews="' + esc(JSON.stringify(p.previews)) + '"' : '') + '>' +
       '<div class="card-art' + (p.thumbnail ? ' photo-art' : '') + '"><span class="num">' + String(k + 1).padStart(2, '0') + '</span>' + art + '</div>' +
       '<div class="card-body"><h3>' + esc(p.name) + '</h3><p class="desc">' + esc(p.description || '') + '</p>' +
       '<div class="card-foot"><span class="price">£' + p.price.toFixed(2) + '</span><span class="view-cta">Choose style →</span></div></div>' +
@@ -954,13 +955,17 @@
   // (or the moment it's tapped), so the picker opens with its pictures already loaded.
   const warmed = new Set();
   function warmPreview(card){
-    const src = card && card.dataset.preview;
-    if(!src || warmed.has(src)) return;
-    warmed.add(src);
-    const im = new Image();
-    im.fetchPriority = 'low';
-    im.decoding = 'async';
-    im.src = src;
+    if(!card) return;
+    let extra = [];
+    try { extra = Object.values(JSON.parse(card.dataset.previews || '{}')); } catch(e){}
+    [card.dataset.preview, ...extra].forEach(src => {
+      if(!src || warmed.has(src)) return;
+      warmed.add(src);
+      const im = new Image();
+      im.fetchPriority = 'low';
+      im.decoding = 'async';
+      im.src = src;
+    });
   }
   const previewObserver = 'IntersectionObserver' in window
     ? new IntersectionObserver(entries => entries.forEach(en => {
@@ -1107,8 +1112,14 @@
     const price = parseFloat(card.dataset.price);
     const photoEl = card.querySelector('.card-photo');
     const cardPreviewImg = card.dataset.preview || null;
-    const media = cardPreviewImg
-      ? '<img class="mock-photo" src="' + cardPreviewImg + '" alt="">'
+    // Styles with their own print PDF have their own preview (products.json "previews", keyed by style slug);
+    // the rest show the main (Fine Dining) preview.
+    let stylePreviews = {};
+    try { stylePreviews = JSON.parse(card.dataset.previews || '{}'); } catch(e){}
+    const STYLE_SLUG = {classic:'classic', funky:'funky', fine:'fine-dining'};
+    const previewFor = id => stylePreviews[STYLE_SLUG[id]] || cardPreviewImg;
+    const mediaFor = id => previewFor(id)
+      ? '<img class="mock-photo" src="' + esc(previewFor(id)) + '" alt="">'
       : (photoEl
         ? '<img class="mock-photo" src="' + photoEl.src + '" alt="">'
         : card.querySelector('.card-art svg').outerHTML);
@@ -1116,6 +1127,7 @@
 
     function draw(){
       const styleName = styleSet.find(s => s.id === selected).name;
+      const media = mediaFor(selected);
       productBody.innerHTML =
         '<h3>' + name + '</h3>' +
         '<p class="desc">' + desc + '</p>' +
@@ -1130,7 +1142,7 @@
         '<div class="style-grid">' +
           styleSet.map(s =>
             '<button type="button" class="style-option style-' + s.id + (s.id === selected ? ' selected' : '') + '" data-style="' + s.id + '">' +
-              '<div class="style-preview">' + (cardPreviewImg ? '<img src="' + cardPreviewImg + '" alt="">' : '') + '</div>' +
+              '<div class="style-preview">' + (previewFor(s.id) ? '<img src="' + esc(previewFor(s.id)) + '" alt="">' : '') + '</div>' +
               '<span class="style-name">' + s.name + '</span>' +
             '</button>'
           ).join('') +
