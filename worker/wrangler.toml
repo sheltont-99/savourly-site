@@ -13,4 +13,4 @@ database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
 #   STRIPE_SECRET_KEY      your Stripe secret key (sk_test_... to start)
 #   STRIPE_WEBHOOK_SECRET  the signing secret Stripe gives you for this endpoint (whsec_...)
 #   ADMIN_PASSWORD         password you choose, protects the /orders dashboard
-#   SITE_URL               e.g. https://sheltont-99.github.io/savourly-site  (used for success/cancel redirects & CORS)
+#   SITE_URL               e.g. https://savourlyco.com  (used for success/cancel redirects & CORS)

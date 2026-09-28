@@ -66,7 +66,7 @@ customer names, emails and addresses, so pick something real and don't share it 
 ```
 wrangler secret put SITE_URL
 ```
-Enter `https://sheltont-99.github.io/savourly-site` (no trailing slash).
+Enter `https://savourlyco.com` (no trailing slash).
 
 ### 4. Deploy
 

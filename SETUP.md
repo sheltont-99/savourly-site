@@ -19,12 +19,26 @@ This repo is public. Nothing here is secret; keys and passwords live only in Clo
 
 | Piece | Where | What it does |
 |---|---|---|
-| Website | `index.html` in this repo → https://sheltont-99.github.io/savourly-site/ | Shop, chef pages, cart, checkout form. Builds every card from `products.json`. |
+| Website | `index.html` in this repo → https://savourlyco.com (GitHub Pages with a custom domain; `CNAME` file in this repo; the old https://sheltont-99.github.io/savourly-site/ address redirects there) | Shop, chef pages, cart, checkout form. Builds every card from `products.json`. |
 | Product list | `products.json` (+ photos in `images/`) | The only place products live: IDs, names, chefs, prices, descriptions, hidden flags, postage. |
 | Checkout | Cloudflare Worker **savourly-checkout** → https://savourly-checkout.shelts-tom.workers.dev (shows "Not found" in a browser; that's normal) | Prices the cart from `products.json`, creates the Stripe payment page, saves the order, marks it paid when Stripe confirms. Must stay public. |
 | Order log | Cloudflare Worker **savourly-admin** → https://savourly-admin.shelts-tom.workers.dev | Your private page: To post / Posted / All / Products (IDs, prices, sales, Hidden column, a print-PDF button per style; view only) / Reports (Excel downloads, weekly email). Locked with Cloudflare Access (email one-time code). |
 | Database | Cloudflare D1 **savourly-orders** | Every order: ref, customer, address, items (product ID, name, style, qty, price), totals, paid/posted times. |
 | Payments | Stripe (currently **test mode / sandbox**) | Takes the money; holds card details; sends "paid" webhooks. |
+
+## Domain: savourlyco.com
+
+- Bought 28 Sep 2026 through **Cloudflare Registrar** (auto-renew on; privacy and transfer lock included). savourly.co.uk belongs to someone else.
+- **Cloudflare → savourlyco.com → DNS** (all **DNS only**, grey cloud, so GitHub can issue the HTTPS certificate):
+  | Type | Name | Content |
+  |---|---|---|
+  | A | `@` | `185.199.108.153` |
+  | A | `@` | `185.199.109.153` |
+  | A | `@` | `185.199.110.153` |
+  | A | `@` | `185.199.111.153` |
+  | CNAME | `www` | `sheltont-99.github.io` |
+- **GitHub → savourly-site → Settings → Pages**: custom domain `savourlyco.com` (the `CNAME` file in this repo), **Enforce HTTPS** ticked. Don't delete the `CNAME` file, or the site falls back to the github.io address.
+- The admin Worker still reads `products.json` from the github.io address; GitHub redirects it to savourlyco.com, so it keeps working.
 
 ## Order references
 
@@ -54,7 +68,7 @@ Quick check that each Worker has the right code: the checkout URL should say **"
 
 **savourly-checkout**: Access protection **off**.
 - Binding: D1 database `DB` → `savourly-orders`
-- Secrets: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `SITE_URL` (= `https://sheltont-99.github.io/savourly-site`)
+- Secrets: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `SITE_URL` (= `https://savourlyco.com`)
 
 **savourly-admin**: Access protection **on (All traffic)**, allowed email = owner's.
 - Binding: D1 database `DB` → `savourly-orders`
