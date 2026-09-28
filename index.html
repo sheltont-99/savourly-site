@@ -182,13 +182,14 @@
   }
   .product-add:hover{background:#a5761f;}
   .product-add:disabled{opacity:0.5;cursor:not-allowed;}
+  .product-actions{display:flex;gap:10px;}
+  .product-actions .product-add{flex:1;}
   .product-link{
-    display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin-top:10px;padding:11px;
-    background:transparent;border:1px solid rgba(32,41,58,0.2);border-radius:10px;color:var(--cream);
-    font-size:0.85rem;font-family:'Work Sans',sans-serif;cursor:pointer;word-break:break-all;
+    flex:none;width:48px;display:flex;align-items:center;justify-content:center;
+    background:transparent;border:1px solid rgba(32,41,58,0.2);border-radius:10px;color:var(--cream);cursor:pointer;
   }
   .product-link:hover{border-color:var(--cream);}
-  .product-link svg{flex:none;width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
+  .product-link svg{flex:none;width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
   .product-link.copied{border-color:var(--gold);color:var(--gold);}
 
   /* ---------- CHECKOUT MODAL ---------- */
@@ -1070,7 +1071,7 @@
   // ---------- Links to individual recipe cards ----------
   // Amara's cards: #card/<recipe>   Other chefs: #chef/<chef>/<recipe>
   const PUBLISHED_URL = 'https://claude.ai/artifact/LnNNApFkEgGhv1tRdxxSBs';
-  const LINK_ICON = '<svg viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>';
+  const SHARE_ICON = '<svg viewBox="0 0 24 24"><path d="M12 15V3"/><path d="M7 8l5-5 5 5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>';
   let cardBaseHash = null;
   function slugify(t){ return t.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/&/g,'and').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,''); }
   function cardHash(card){
@@ -1091,7 +1092,7 @@
   }
   function copyCardLink(e){
     const btn = e.currentTarget, url = cardLinkUrl();
-    const done = ok => { btn.querySelector('span').textContent = ok ? 'Link copied' : url; btn.classList.toggle('copied', ok); };
+    const done = ok => { btn.title = ok ? 'Link copied' : url; btn.classList.toggle('copied', ok); };
     try {
       navigator.clipboard.writeText(url).then(() => done(true), () => fallback());
     } catch(err){ fallback(); }
@@ -1101,6 +1102,13 @@
       let ok = false; try { ok = document.execCommand('copy'); } catch(e2){}
       ta.remove(); done(ok);
     }
+  }
+  // Share button: the phone's share sheet where available, otherwise copy the link
+  function shareCard(e){
+    if(!navigator.share) return copyCardLink(e);
+    const btn = e.currentTarget;
+    navigator.share({title: productBody.querySelector('h3').textContent, url: cardLinkUrl()})
+      .catch(err => { if(err.name !== 'AbortError') copyCardLink({currentTarget: btn}); });
   }
   function openCardFromLink(recipeSlug){
     const scope = document.body.dataset.page === 'chef' ? '#profileBody .card' : 'body > .shop .card';
@@ -1151,11 +1159,13 @@
             '</button>'
           ).join('') +
         '</div>' +
-        '<button class="product-add" id="productAdd" type="button">Add to cart — £' + price.toFixed(2) + '</button>' +
-        (isBox ? '' : '<button class="product-link" id="productLink" type="button">' + LINK_ICON + '<span>Copy link to this card</span></button>');
+        '<div class="product-actions">' +
+          (isBox ? '' : '<button class="product-link" id="productLink" type="button" aria-label="Share this card" title="Share this card">' + SHARE_ICON + '</button>') +
+          '<button class="product-add" id="productAdd" type="button">Add to cart — £' + price.toFixed(2) + '</button>' +
+        '</div>';
 
       const linkBtn = document.getElementById('productLink');
-      if(linkBtn) linkBtn.addEventListener('click', copyCardLink);
+      if(linkBtn) linkBtn.addEventListener('click', shareCard);
       productBody.querySelectorAll('.style-option').forEach(btn => {
         btn.addEventListener('click', () => { selected = btn.dataset.style; draw(); });
       });
