@@ -231,6 +231,9 @@
     font-size:0.9rem;font-family:'Work Sans',sans-serif;font-weight:600;cursor:pointer;
   }
   .checkout-place:hover{background:#a5761f;}
+  #checkoutPlace{background:#1A1A1A;}
+  #checkoutPlace:hover{background:#3A3A3A;}
+  #checkoutPlace:disabled{background:#1A1A1A;opacity:0.7;cursor:default;}
   .checkout-error{color:var(--rust);font-size:0.8rem;margin-top:8px;display:none;}
   .checkout-error.show{display:block;}
   .checkout-success{text-align:center;padding:10px 0 4px;}
@@ -1284,7 +1287,7 @@
       '<div id="payAppleNote" class="apple-note" style="display:none;">You\'ll confirm this payment with Face ID or Touch ID — no card details needed here.</div>') +
 
       '<div class="checkout-error" id="checkoutError">Fill in your shipping address, email and payment details to continue.</div>' +
-      '<button class="checkout-place" id="checkoutPlace" type="button">Pay and post — £' + total.toFixed(2) + '</button>' +
+      '<button class="checkout-place" id="checkoutPlace" type="button">Pay — £' + total.toFixed(2) + '</button>' +
       (CHECKOUT_API
         ? '<div class="checkout-demo-note">You\'ll be taken to Stripe\'s secure payment page to finish paying.</div>'
         : '<div class="checkout-demo-note">Demo checkout — no card is charged and nothing is actually posted.</div>');
@@ -1303,7 +1306,7 @@
       payAppleBtn?.classList.toggle('active', !isCard);
       if(payCardFields) payCardFields.style.display = isCard ? 'block' : 'none';
       if(payAppleNote) payAppleNote.style.display = isCard ? 'none' : 'block';
-      checkoutPlace.textContent = (isCard ? 'Pay and post — £' : 'Pay with Apple Pay and post — £') + total.toFixed(2);
+      checkoutPlace.textContent = (isCard ? 'Pay — £' : 'Pay with Apple Pay — £') + total.toFixed(2);
     }
     payCardBtn?.addEventListener('click', () => setPaymentMethod('card'));
     payAppleBtn?.addEventListener('click', () => setPaymentMethod('apple'));

@@ -5,7 +5,7 @@ This repo is public. Nothing here is secret; keys and passwords live only in Clo
 ## The pieces
 
 ```
- Customer ──► Website (GitHub Pages) ──"Pay and post"──► savourly-checkout (Cloudflare Worker)
+ Customer ──► Website (GitHub Pages) ──"Pay"───────────► savourly-checkout (Cloudflare Worker)
                   │  reads products.json                       │  reads products.json for prices
                   │                                            │  writes order to D1 (pending)
                   │                                            ▼

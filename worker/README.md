@@ -102,7 +102,7 @@ to a real redirect to Stripe's hosted payment page.
 ## Using it
 
 - **Test a purchase**: add cards to your cart on the live site, go to checkout, fill in the
-  shipping fields, click "Pay and post" — you'll land on Stripe's real hosted payment page. Use
+  shipping fields, click "Pay" — you'll land on Stripe's real hosted payment page. Use
   Stripe's test card `4242 4242 4242 4242`, any future expiry, any CVC, any postcode.
 - **See your orders**: visit `https://savourly-checkout.<your-subdomain>.workers.dev/orders` and
   log in with the `ADMIN_PASSWORD` you set (your browser will prompt for it). You'll see every
