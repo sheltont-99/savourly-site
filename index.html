@@ -535,9 +535,14 @@
     .hero-inner{grid-template-columns:1fr;}
     .portrait{order:-1;max-width:280px;margin:0 auto;}
     .landing-section .hero-inner{grid-template-columns:1fr;gap:28px;}
-    .how-steps{grid-template-columns:1fr;gap:10px;margin-top:32px;}
-    .how-step{padding:22px 20px;}
-    .how-arrow svg{transform:rotate(90deg);width:22px;height:22px;}
+    .how-steps{grid-template-columns:1fr auto 1fr auto 1fr;gap:4px;margin-top:32px;}
+    .how-step{padding:16px 8px;text-align:center;border-radius:12px;}
+    .how-num{width:30px;height:30px;font-size:0.95rem;}
+    .how-step h3{font-size:0.85rem;line-height:1.3;margin-top:10px;}
+    .how-step p{display:none;}
+    .how-verb{display:none;}
+    .how-step h3::first-letter{text-transform:uppercase;}
+    .how-arrow svg{width:16px;height:16px;}
     .landing-section .portrait{max-width:100%;aspect-ratio:16/10;}
     .about-grid{grid-template-columns:1fr;gap:20px;}
     .grid{grid-template-columns:1fr 1fr;}
@@ -652,19 +657,19 @@
   <ol class="wrap how-steps" aria-label="How it works">
     <li class="how-step">
       <span class="how-num">1</span>
-      <h3>Select your chef or cuisine</h3>
+      <h3><span class="how-verb">Select your </span>chef or cuisine</h3>
       <p>Browse the kitchens on Savourly, or search by the cuisine you're craving.</p>
     </li>
     <li class="how-arrow" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></li>
     <li class="how-step">
       <span class="how-num">2</span>
-      <h3>Select your recipes</h3>
+      <h3><span class="how-verb">Select your </span>recipes</h3>
       <p>Pick the dishes you want to cook. Every recipe is its own card.</p>
     </li>
     <li class="how-arrow" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></li>
     <li class="how-step">
       <span class="how-num">3</span>
-      <h3>Select your style + recipe box</h3>
+      <h3><span class="how-verb">Select your </span>style + recipe box</h3>
       <p>Choose Classic, Vibrant or Fine Dining cards, then add a recipe box design to keep them in.</p>
     </li>
   </ol>
