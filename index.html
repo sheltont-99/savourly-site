@@ -430,7 +430,7 @@
   /* ---------- DISCOVER (swipeable cuisine rows) ---------- */
   .discover-page{padding:76px 28px 96px;min-height:70vh;}
   body:not([data-page="discover"]) .discover-page{display:none;}
-  body[data-page="discover"] .nav-links a[href="#discover"]{color:var(--cream);}
+  body[data-page="discover"] .nav-links a[href="#recipes"]{color:var(--cream);}
   .cuisine-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px;}
   .cuisine-chip{
     border:1px solid rgba(32,41,58,0.18);background:var(--indigo);color:var(--cream);
@@ -645,7 +645,7 @@
       <a href="#">About</a>
       <a href="#chefs">All Chefs</a>
       <a href="#boxes">Recipe Boxes</a>
-      <a href="#discover">Discover</a>
+      <a href="#recipes">Recipes</a>
     </div>
   </div>
   <div class="nav-right">
@@ -813,7 +813,7 @@
   <div class="wrap">
     <div class="chefs-page-head">
       <a class="back-link" href="#">&larr; Back to Savourly</a>
-      <h1>Discover</h1>
+      <h1>Recipes</h1>
       <p>Recipe cards from every kitchen on Savourly, grouped by cuisine. Swipe along a row to see what each chef cooks.</p>
       <div class="cuisine-chips" id="cuisineChips"></div>
     </div>
@@ -1638,7 +1638,7 @@
     if(productOverlay.classList.contains('open')){ productOverlay.classList.remove('open'); cardBaseHash = null; }
     if(hash === '#chefs') page = 'chefs';
     else if(hash === '#boxes') page = 'boxes';
-    else if(hash === '#discover') page = 'discover';
+    else if(hash === '#recipes' || hash === '#discover') page = 'discover';
     else if(hash === '#contact') page = 'contact';
     else if(hash.startsWith('#card/')){ if(!CHEFS.find(c => c.handbuilt).hidden){ page = 'amara'; recipe = hash.slice(6); } }
     else if(hash.startsWith('#chef/')){
@@ -1651,7 +1651,7 @@
     if(page === 'chef') renderProfile(chef, idx);
     if(page === 'discover') renderDiscover();
     const who = page === 'amara' ? 'Amara Osei' : (chef ? chef.name : null);
-    document.title = page === 'chefs' ? 'All Chefs — Savourly' : page === 'boxes' ? 'Recipe Boxes — Savourly' : page === 'discover' ? 'Discover — Savourly' : page === 'contact' ? 'Contact Us and Returns — Savourly' : page === 'landing' ? 'About — Savourly' : who + ' — Recipe Cards';
+    document.title = page === 'chefs' ? 'All Chefs — Savourly' : page === 'boxes' ? 'Recipe Boxes — Savourly' : page === 'discover' ? 'Recipes — Savourly' : page === 'contact' ? 'Contact Us and Returns — Savourly' : page === 'landing' ? 'About — Savourly' : who + ' — Recipe Cards';
     document.getElementById('footerName').textContent = '© 2026 ' + (who || 'Savourly');
     window.scrollTo(0,0);
     if(recipe) openCardFromLink(recipe);
