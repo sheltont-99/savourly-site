@@ -568,6 +568,20 @@
       "hidden": false
     },
     {
+      "id": "PR00056",
+      "name": "Crispy Tofu, Garlicky Yoghurt + Pul Biber Butter",
+      "chefId": "CHEF00009",
+      "type": "card",
+      "price": 1.99,
+      "description": "Smoky, crispy tofu mince piled over pasta and garlicky yoghurt, finished with a sizzling pul biber butter. Warning: highly addictive.",
+      "thumbnail": "images/PR00056-thumbnail.jpg",
+      "preview": "images/PR00056-preview.jpg",
+      "previews": {
+        "vibrant": "images/PR00056-preview-vibrant.jpg"
+      },
+      "hidden": false
+    },
+    {
       "id": "PR00055",
       "name": "Broccoli & Stilton Soup",
       "chefId": "CHEF00010",
