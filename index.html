@@ -1281,7 +1281,7 @@
       const m = location.hash.match(/^#chef\/[^/]+/);
       cardBaseHash = location.hash.startsWith('#card/') ? '' : (m ? m[0] : location.hash);
     }
-    history.replaceState(null, '', cardHash(card));
+    history.replaceState(history.state, '', cardHash(card));
   }
   function cardLinkUrl(){
     const inFrame = (() => { try { return window.top !== window.self; } catch(e){ return true; } })();
@@ -1397,7 +1397,7 @@
   }
   function closeProduct(){
     productOverlay.classList.remove('open');
-    if(cardBaseHash !== null){ history.replaceState(null, '', cardBaseHash || (location.pathname + location.search)); cardBaseHash = null; }
+    if(cardBaseHash !== null){ history.replaceState(history.state, '', cardBaseHash || (location.pathname + location.search)); cardBaseHash = null; }
   }
 
   document.querySelectorAll('.card').forEach(card => {
@@ -1658,42 +1658,38 @@
     const a = e.target.closest('a[href^="#prof"]');
     if(a){ e.preventDefault(); const t = document.getElementById(a.getAttribute('href').slice(1)); if(t) t.scrollIntoView({behavior:'smooth'}); }
   });
-  // Back links go to the page you actually came from (like the browser's back), labelled with its name.
-  // Landing on a page directly keeps each link's default ("All chefs" / "Back to Savourly").
-  const navStack = []; let curPageKey = null, backLinkUsed = false, poppedHistory = false;
-  const pageKeyOf = h => { h = (h || '').replace(/^#?/, '#'); if(h === '#' ) return '';
-    if(h === '#discover') return '#recipes'; return h.split('/').slice(0, 2).join('/'); };
+  // Back links go to the page you actually came from, using the browser's own history, labelled with its name.
+  // Each history entry remembers which page it is (pk), the page before it (prev) and how many extra
+  // entries the same page added (skip). Landing on a page directly keeps each link's default.
+  let curPageKey = null;
   function pageLabel(key){
     if(key === '') return 'About';
     const fixed = {'#recipes':'Recipes', '#chefs':'All chefs', '#boxes':'Recipe Boxes', '#contact':'Contact'};
     if(fixed[key]) return fixed[key];
     if(key.startsWith('#chef/')){ const c = CHEFS.find(c => c.slug === key.slice(6)); if(c) return c.name; }
-    if(key.startsWith('#card')) return (CHEFS.find(c => c.handbuilt) || {}).name || 'Back';
     return 'Back';
   }
   document.querySelectorAll('.back-link').forEach(a => { a.dataset.defHref = a.getAttribute('href'); a.dataset.defText = a.textContent; });
-  function trackPage(){
-    const key = pageKeyOf(location.hash);
-    if(key === curPageKey) return;
-    if(backLinkUsed){ backLinkUsed = false; }
-    else if(poppedHistory && navStack[navStack.length - 1] === key){ navStack.pop(); }
-    else if(curPageKey !== null){ navStack.push(curPageKey); if(navStack.length > 50) navStack.shift(); }
-    poppedHistory = false;
-    curPageKey = key;
-    const prev = navStack.length ? navStack[navStack.length - 1] : null;
+  function trackPage(key){
+    const st = history.state && typeof history.state === 'object' && 'pk' in history.state ? history.state : null;
+    let info;
+    if(st && st.pk === key) info = st;                                   // revisiting via back/forward or a refresh
+    else if(curPageKey === null) info = {pk: key, prev: null, skip: 0};   // arrived on this page directly
+    else if(key === curPageKey){ const cur = window.__pageInfo || {prev: null, skip: 0}; info = {pk: key, prev: cur.prev, skip: (cur.skip || 0) + 1}; }
+    else info = {pk: key, prev: curPageKey, skip: 0};
+    try { history.replaceState(Object.assign({}, st || {}, info), ''); } catch(e){}
+    window.__pageInfo = info; curPageKey = key;
     document.querySelectorAll('.back-link').forEach(a => {
-      if(prev === null){ a.setAttribute('href', a.dataset.defHref); a.textContent = a.dataset.defText; }
-      else { a.setAttribute('href', prev || '#'); a.textContent = '\u2190 ' + pageLabel(prev); }
+      if(info.prev === null){ a.setAttribute('href', a.dataset.defHref); a.textContent = a.dataset.defText; }
+      else { a.setAttribute('href', info.prev || '#'); a.textContent = '\u2190 ' + pageLabel(info.prev); }
     });
   }
-  window.addEventListener('popstate', () => { poppedHistory = true; });
   document.addEventListener('click', e => {
     const a = e.target.closest('.back-link');
-    if(!a || !navStack.length) return;
+    const info = window.__pageInfo;
+    if(!a || !info || info.prev === null) return;
     e.preventDefault();
-    const to = navStack.pop();
-    backLinkUsed = true;
-    location.hash = to || '#';
+    history.go(-((info.skip || 0) + 1));
   });
   function route(){
     navMenu.classList.remove('open'); navToggle.setAttribute('aria-expanded','false');
@@ -1714,7 +1710,8 @@
       else if(idx >= 0){ page = 'chef'; chef = CHEFS[idx]; recipe = bits[1] || null; }
     }
     document.body.dataset.page = page;
-    trackPage();
+    trackPage(page === 'chef' ? '#chef/' + chef.slug : page === 'amara' ? '#chef/' + CHEFS.find(c => c.handbuilt).slug
+      : page === 'landing' ? '' : page === 'discover' ? '#recipes' : '#' + page);
     if(page === 'chef') renderProfile(chef, idx);
     if(page === 'discover') renderDiscover();
     const who = page === 'amara' ? 'Amara Osei' : (chef ? chef.name : null);
