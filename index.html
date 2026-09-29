@@ -1114,7 +1114,7 @@
   }, {passive: true});
   function chefCardsHTML(chefId){
     const list = PRODUCT_LIST.filter(p => p.chefId === chefId && p.type === 'card' && !p.hidden);
-    return list.length ? list.map(productCardHTML).join('') : '<p class="grid-note">New cards coming soon.</p>';
+    return list.length ? list.map((p, k) => productCardHTML(p, k)).join('') : '<p class="grid-note">New cards coming soon.</p>';
   }
   // Discover: one swipeable row per cuisine (products.json "cuisine"), mixing every chef's cards.
   // Biggest cuisines first; within a row the chefs take turns so no one kitchen fills the start.
