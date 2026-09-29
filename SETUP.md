@@ -143,6 +143,7 @@ The key lives in your GitHub **account** settings, not the repo's settings.
 | Check a payment | Order row → *View in Stripe* |
 | Print a product | Order row → **PDF** next to the product (opens the private `print-files/<ID>-<style>.pdf` through your login) |
 | Add product photos / print PDFs | Send them to Claude with the product ID (and style for PDFs); see *Product images and print files* |
+| Add or change a chef's photo | Send it to Claude with the chef's name or ID. It's saved as `images/<CHEF ID>-portrait.jpg` and set as `photo:` on the chef's `CHEFS` entry in `index.html`. That one photo is used on the chef's page **and** as the small round picture on each of their cards on the Recipes tab, so both update together. Chefs with no photo show their initials there. |
 | Make a Fine Dining card from a recipe | Paste the recipe (text or a picture) to Claude, which uses the *savourly-recipe-card-pdf-creator* skill |
 | Excel report | Admin → **Reports** → *Last week* / *This week so far* / *All orders*; weekly copies in the private repo `savourly-reports/reports/<year>/` |
 
