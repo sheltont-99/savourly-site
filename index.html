@@ -1090,7 +1090,7 @@
       ? '<img class="card-photo" src="' + esc(p.thumbnail) + '" alt="" decoding="async"' +
         (k < EAGER_PHOTOS ? (k < 2 ? ' fetchpriority="high"' : '') : ' loading="lazy"') + '>'
       : (CARD_ART[k % CARD_ART.length] || '');
-    return '<div class="card c' + ((k % 7) + 1) + '"' + (chef ? ' data-chef-slug="' + chef.slug + '"' : '') + ' data-id=""' + esc(p.id) + '" data-price="' + p.price.toFixed(2) + '"' +
+    return '<div class="card c' + ((k % 7) + 1) + '"' + (chef ? ' data-chef-slug="' + chef.slug + '"' : '') + ' data-id="' + esc(p.id) + '" data-price="' + p.price.toFixed(2) + '"' +
         (p.preview ? ' data-preview="' + esc(p.preview) + '"' : '') +
         (p.previews ? ' data-previews="' + esc(JSON.stringify(p.previews)) + '"' : '') + '>' +
       '<div class="card-art' + (p.thumbnail ? ' photo-art' : '') + '"><span class="num">' + String(k + 1).padStart(2, '0') + '</span>' + art + '</div>' +
