@@ -378,6 +378,13 @@
   .about h2{font-size:1.7rem;color:var(--cream);}
   .about .label{color:var(--gold);font-size:0.9rem;margin-bottom:10px;}
   .about p{color:var(--cream-dim);line-height:1.75;font-size:1.02rem;max-width:62ch;}
+  .how-steps{list-style:none;margin:48px auto 0;padding:0 28px;display:grid;grid-template-columns:1fr auto 1fr auto 1fr;gap:18px;align-items:stretch;}
+  .how-step{background:var(--indigo);border:1px solid rgba(32,41,58,0.08);border-radius:14px;padding:26px 24px;}
+  .how-num{display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:50%;background:var(--rust);color:#FFFFFF;font-family:'Fraunces',serif;font-weight:600;font-size:1.1rem;}
+  .how-step h3{font-size:1.2rem;color:var(--cream);margin-top:16px;}
+  .how-step p{margin-top:8px;font-size:0.95rem;line-height:1.6;}
+  .how-arrow{display:flex;align-items:center;justify-content:center;color:var(--gold);}
+  .how-arrow svg{width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
   .founder-photo{display:block;width:100%;max-width:320px;height:auto;aspect-ratio:1/1;object-fit:cover;border-radius:14px;box-shadow:0 18px 40px rgba(32,41,58,0.12);}
   .stats{display:flex;gap:36px;margin-top:28px;}
   .stat b{display:block;font-family:'Fraunces',serif;font-size:1.6rem;color:var(--gold);}
@@ -528,6 +535,9 @@
     .hero-inner{grid-template-columns:1fr;}
     .portrait{order:-1;max-width:280px;margin:0 auto;}
     .landing-section .hero-inner{grid-template-columns:1fr;gap:28px;}
+    .how-steps{grid-template-columns:1fr;gap:10px;margin-top:32px;}
+    .how-step{padding:22px 20px;}
+    .how-arrow svg{transform:rotate(90deg);width:22px;height:22px;}
     .landing-section .portrait{max-width:100%;aspect-ratio:16/10;}
     .about-grid{grid-template-columns:1fr;gap:20px;}
     .grid{grid-template-columns:1fr 1fr;}
@@ -639,6 +649,25 @@
       </div>
     </div>
   </div>
+  <ol class="wrap how-steps" aria-label="How it works">
+    <li class="how-step">
+      <span class="how-num">1</span>
+      <h3>Select your chef or cuisine</h3>
+      <p>Browse the kitchens on Savourly, or search by the cuisine you're craving.</p>
+    </li>
+    <li class="how-arrow" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></li>
+    <li class="how-step">
+      <span class="how-num">2</span>
+      <h3>Select your recipes</h3>
+      <p>Pick the dishes you want to cook. Every recipe is its own card.</p>
+    </li>
+    <li class="how-arrow" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></li>
+    <li class="how-step">
+      <span class="how-num">3</span>
+      <h3>Select your style + recipe box</h3>
+      <p>Choose Classic, Vibrant or Fine Dining cards, then add a recipe box design to keep them in.</p>
+    </li>
+  </ol>
 </section>
 <section class="about founder landing-section" style="padding:76px 28px;border-bottom:1px solid rgba(32,41,58,0.08);">
   <div class="wrap about-grid">
