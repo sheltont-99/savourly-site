@@ -1077,16 +1077,24 @@
   // The first few photos on a page load straight away (mobile Safari otherwise waits until you've
   // nearly scrolled to them); the rest stay lazy so chefs with lots of cards don't load everything.
   const EAGER_PHOTOS = 6;
-  function productCardHTML(p, k, chefName){
+  // Chef name + small round picture (links to the chef's page). Same on every recipe card and its pop-up.
+  function chefLineHTML(chef){
+    const initials = chef.name.split(/\s+/).map(w => w[0]).join('').slice(0, 2).toUpperCase();
+    return '<div class="card-chef-line"><div class="card-chef">' + esc(chef.name) + '</div>' +
+      '<a class="card-chef-pic" href="#chef/' + chef.slug + '" aria-label="' + esc(chef.name) + '\'s page" title="' + esc(chef.name) + '">' +
+        (chef.photo ? '<img src="' + esc(chef.photo) + '" alt="" loading="lazy" decoding="async">' : esc(initials)) + '</a></div>';
+  }
+  function productCardHTML(p, k){
+    const chef = p.chefId ? CHEFS.find(c => c.id === p.chefId) : null;
     const art = p.thumbnail
       ? '<img class="card-photo" src="' + esc(p.thumbnail) + '" alt="" decoding="async"' +
         (k < EAGER_PHOTOS ? (k < 2 ? ' fetchpriority="high"' : '') : ' loading="lazy"') + '>'
       : (CARD_ART[k % CARD_ART.length] || '');
-    return '<div class="card c' + ((k % 7) + 1) + '" data-id="' + esc(p.id) + '" data-price="' + p.price.toFixed(2) + '"' +
+    return '<div class="card c' + ((k % 7) + 1) + '"' + (chef ? ' data-chef-slug="' + chef.slug + '"' : '') + ' data-id=""' + esc(p.id) + '" data-price="' + p.price.toFixed(2) + '"' +
         (p.preview ? ' data-preview="' + esc(p.preview) + '"' : '') +
         (p.previews ? ' data-previews="' + esc(JSON.stringify(p.previews)) + '"' : '') + '>' +
       '<div class="card-art' + (p.thumbnail ? ' photo-art' : '') + '"><span class="num">' + String(k + 1).padStart(2, '0') + '</span>' + art + '</div>' +
-      '<div class="card-body">' + (chefName ? '<div class="card-chef">' + esc(chefName) + '</div>' : '') + '<h3>' + esc(p.name) + '</h3><p class="desc">' + esc(p.description || '') + '</p>' +
+      '<div class="card-body">' + (chef ? chefLineHTML(chef) : '') + '<h3>' + esc(p.name) + '</h3><p class="desc">' + esc(p.description || '') + '</p>' +
       '<div class="card-foot"><span class="price">£' + p.price.toFixed(2) + '</span><span class="view-cta">Choose style →</span></div></div>' +
     '</div>';
   }
@@ -1150,15 +1158,8 @@
           '<div class="row-arrows"><button type="button" class="row-arrow" data-dir="-1" aria-label="Scroll ' + esc(r.cuisine) + ' left">' + ARROW_L + '</button>' +
           '<button type="button" class="row-arrow" data-dir="1" aria-label="Scroll ' + esc(r.cuisine) + ' right">' + ARROW_R + '</button></div>' +
         '</div>' +
-        '<div class="row-track">' + r.items.map((p, k) => {
-          const chef = chefById[p.chefId];
-          const initials = chef.name.split(/\s+/).map(w => w[0]).join('').slice(0, 2).toUpperCase();
-          const pic = '<a class="card-chef-pic" href="#chef/' + chef.slug + '" aria-label="' + esc(chef.name) + '\'s page" title="' + esc(chef.name) + '">' +
-            (chef.photo ? '<img src="' + esc(chef.photo) + '" alt="" loading="lazy" decoding="async">' : esc(initials)) + '</a>';
-          return productCardHTML(p, i === 0 ? k : k + EAGER_PHOTOS, chef.name)
-            .replace('<div class="card ', '<div data-chef-slug="' + chef.slug + '" class="card ')
-            .replace('<div class="card-chef">' + esc(chef.name) + '</div>', '<div class="card-chef-line"><div class="card-chef">' + esc(chef.name) + '</div>' + pic + '</div>');
-        }).join('') + '</div>' +
+        '<div class="row-track">' + r.items.map((p, k) => productCardHTML(p, i === 0 ? k : k + EAGER_PHOTOS)
+        ).join('') + '</div>' +
       '</div>').join('');
     rowsEl.querySelectorAll('.row-track').forEach(track => {
       const arrows = track.previousElementSibling.querySelectorAll('.row-arrow');
@@ -1333,7 +1334,7 @@
         : (isBox ? BOX_THUMB_ICON : card.querySelector('.card-art svg').outerHTML));
     let selected = styleSet[0].id;
     // Cards on the Recipes tab carry their chef's name + picture; show it in the pop-up too, linking to the chef's page.
-    const chefLineEl = card.dataset.chefSlug ? card.querySelector('.card-chef-line') : null;
+    const chefLineEl = card.querySelector('.card-chef-line');
     const chefLine = chefLineEl ? chefLineEl.outerHTML.replace('class="card-chef-line"', 'class="card-chef-line pm-chef-line"') : '';
 
     function draw(){
@@ -1362,7 +1363,10 @@
         (isBox ? '' : '<button class="product-link" id="productLink" type="button" aria-label="Share this card" title="Share this card">' + SHARE_ICON + '</button>');
 
       const chefPic = productBody.querySelector('.pm-chef-line .card-chef-pic');
-      if(chefPic) chefPic.addEventListener('click', e => { e.preventDefault(); const to = chefPic.getAttribute('href'); closeProduct(); location.hash = to; });
+      if(chefPic) chefPic.addEventListener('click', e => {
+        e.preventDefault(); const to = chefPic.getAttribute('href'); closeProduct();
+        if(location.hash === to) window.scrollTo({top: 0, behavior: 'smooth'}); else location.hash = to;
+      });
       const linkBtn = document.getElementById('productLink');
       if(linkBtn) linkBtn.addEventListener('click', shareCard);
       productBody.querySelectorAll('.style-option').forEach(btn => {
@@ -1639,13 +1643,57 @@
   document.getElementById('amaraStory').addEventListener('click', e => { e.preventDefault(); document.getElementById('about').scrollIntoView({behavior:'smooth'}); });
 
   // cards open the style picker; in-page buttons scroll within the chef page
+  // A chef picture on a card is a link to that chef's page; on their own page it scrolls back to the top.
+  document.addEventListener('click', e => {
+    const pic = e.target.closest('.card-chef-pic');
+    if(pic && !pic.closest('#productBody') && pic.getAttribute('href') === location.hash){ e.preventDefault(); window.scrollTo({top: 0, behavior: 'smooth'}); }
+  });
   document.getElementById('amaraGrid').addEventListener('click', e => {
+    if(e.target.closest('.card-chef-pic')) return;
     const card = e.target.closest('.card'); if(card) openProduct(card);
   });
   profileBody.addEventListener('click', e => {
+    if(e.target.closest('.card-chef-pic')) return;
     const card = e.target.closest('.card'); if(card){ openProduct(card); return; }
     const a = e.target.closest('a[href^="#prof"]');
     if(a){ e.preventDefault(); const t = document.getElementById(a.getAttribute('href').slice(1)); if(t) t.scrollIntoView({behavior:'smooth'}); }
+  });
+  // Back links go to the page you actually came from (like the browser's back), labelled with its name.
+  // Landing on a page directly keeps each link's default ("All chefs" / "Back to Savourly").
+  const navStack = []; let curPageKey = null, backLinkUsed = false, poppedHistory = false;
+  const pageKeyOf = h => { h = (h || '').replace(/^#?/, '#'); if(h === '#' ) return '';
+    if(h === '#discover') return '#recipes'; return h.split('/').slice(0, 2).join('/'); };
+  function pageLabel(key){
+    if(key === '') return 'About';
+    const fixed = {'#recipes':'Recipes', '#chefs':'All chefs', '#boxes':'Recipe Boxes', '#contact':'Contact'};
+    if(fixed[key]) return fixed[key];
+    if(key.startsWith('#chef/')){ const c = CHEFS.find(c => c.slug === key.slice(6)); if(c) return c.name; }
+    if(key.startsWith('#card')) return (CHEFS.find(c => c.handbuilt) || {}).name || 'Back';
+    return 'Back';
+  }
+  document.querySelectorAll('.back-link').forEach(a => { a.dataset.defHref = a.getAttribute('href'); a.dataset.defText = a.textContent; });
+  function trackPage(){
+    const key = pageKeyOf(location.hash);
+    if(key === curPageKey) return;
+    if(backLinkUsed){ backLinkUsed = false; }
+    else if(poppedHistory && navStack[navStack.length - 1] === key){ navStack.pop(); }
+    else if(curPageKey !== null){ navStack.push(curPageKey); if(navStack.length > 50) navStack.shift(); }
+    poppedHistory = false;
+    curPageKey = key;
+    const prev = navStack.length ? navStack[navStack.length - 1] : null;
+    document.querySelectorAll('.back-link').forEach(a => {
+      if(prev === null){ a.setAttribute('href', a.dataset.defHref); a.textContent = a.dataset.defText; }
+      else { a.setAttribute('href', prev || '#'); a.textContent = '\u2190 ' + pageLabel(prev); }
+    });
+  }
+  window.addEventListener('popstate', () => { poppedHistory = true; });
+  document.addEventListener('click', e => {
+    const a = e.target.closest('.back-link');
+    if(!a || !navStack.length) return;
+    e.preventDefault();
+    const to = navStack.pop();
+    backLinkUsed = true;
+    location.hash = to || '#';
   });
   function route(){
     navMenu.classList.remove('open'); navToggle.setAttribute('aria-expanded','false');
@@ -1666,6 +1714,7 @@
       else if(idx >= 0){ page = 'chef'; chef = CHEFS[idx]; recipe = bits[1] || null; }
     }
     document.body.dataset.page = page;
+    trackPage();
     if(page === 'chef') renderProfile(chef, idx);
     if(page === 'discover') renderDiscover();
     const who = page === 'amara' ? 'Amara Osei' : (chef ? chef.name : null);
