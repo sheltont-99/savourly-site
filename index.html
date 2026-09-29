@@ -457,6 +457,11 @@
   .row-track .card{flex:0 0 280px;scroll-snap-align:start;}
   .row-track .card:hover{transform:none;box-shadow:0 12px 24px -14px rgba(32,41,58,0.25);}
   .row-track .card-art .num{display:none;}
+  .card-chef-pic{position:absolute;top:10px;left:10px;z-index:2;width:34px;height:34px;border-radius:50%;overflow:hidden;
+    border:2px solid #FBF7EF;box-shadow:0 1px 4px rgba(0,0,0,0.3);background:#3A2318;color:#F2EAD9;
+    display:flex;align-items:center;justify-content:center;font-family:'Fraunces',serif;font-weight:700;font-size:0.72rem;text-decoration:none;}
+  .card-chef-pic img{width:100%;height:100%;object-fit:cover;display:block;}
+  @media (hover:hover){ .card-chef-pic:hover{transform:scale(1.08);} }
   .card-chef{font-size:0.72rem;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--gold);margin-bottom:-4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   @media (max-width:820px), (pointer:coarse){ .row-arrows{display:none;} }
   @media (max-width:520px){
@@ -1145,7 +1150,12 @@
         '</div>' +
         '<div class="row-track">' + r.items.map((p, k) => {
           const chef = chefById[p.chefId];
-          return productCardHTML(p, i === 0 ? k : k + EAGER_PHOTOS, chef.name).replace('<div class="card ', '<div data-chef-slug="' + chef.slug + '" class="card ');
+          const initials = chef.name.split(/\s+/).map(w => w[0]).join('').slice(0, 2).toUpperCase();
+          const pic = '<a class="card-chef-pic" href="#chef/' + chef.slug + '" aria-label="' + esc(chef.name) + '\'s page" title="' + esc(chef.name) + '">' +
+            (chef.photo ? '<img src="' + esc(chef.photo) + '" alt="" loading="lazy" decoding="async">' : esc(initials)) + '</a>';
+          return productCardHTML(p, i === 0 ? k : k + EAGER_PHOTOS, chef.name)
+            .replace('<div class="card ', '<div data-chef-slug="' + chef.slug + '" class="card ')
+            .replace('<span class="num">', pic + '<span class="num">');
         }).join('') + '</div>' +
       '</div>').join('');
     rowsEl.querySelectorAll('.row-track').forEach(track => {
@@ -1164,6 +1174,7 @@
     if(chip){ document.getElementById('cuisineRow' + chip.dataset.row).scrollIntoView({behavior:'smooth', block:'start'}); return; }
     const arrow = e.target.closest('.row-arrow');
     if(arrow){ const track = arrow.closest('.cuisine-row').querySelector('.row-track'); track.scrollBy({left: +arrow.dataset.dir * track.clientWidth * 0.85}); return; }
+    if(e.target.closest('.card-chef-pic')) return; // chef picture: follow its link to the chef's page
     const card = e.target.closest('.card'); if(card) openProduct(card);
   });
   // Recipe boxes are laid out by hand on their page; the list still sets their price and can hide them.
