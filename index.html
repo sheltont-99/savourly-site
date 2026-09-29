@@ -357,6 +357,10 @@
     box-shadow:0 30px 60px -20px rgba(0,0,0,0.55);
   }
   .portrait svg{position:absolute;inset:0;width:100%;height:100%;opacity:0.5;}
+  /* About page: wider, shorter photo, top-aligned with the text */
+  .landing-section .hero-inner{align-items:start;grid-template-columns:1fr 1fr;}
+  .landing-section .portrait{aspect-ratio:3/2;max-width:540px;}
+  .landing-section .chef-icon{width:22%;}
   .chef-icon{
     position:absolute;top:50%;left:50%;transform:translate(-50%,-52%);
     width:38%;
@@ -523,6 +527,8 @@
   @media (max-width:820px){
     .hero-inner{grid-template-columns:1fr;}
     .portrait{order:-1;max-width:280px;margin:0 auto;}
+    .landing-section .hero-inner{grid-template-columns:1fr;gap:28px;}
+    .landing-section .portrait{max-width:100%;aspect-ratio:16/10;}
     .about-grid{grid-template-columns:1fr;gap:20px;}
     .grid{grid-template-columns:1fr 1fr;}
 
@@ -597,7 +603,7 @@
   </div>
 </nav>
 
-<section class="hero landing-section" style="position:relative;padding:72px 28px 88px;overflow:hidden;background:radial-gradient(ellipse at 78% 18%, rgba(217,169,61,0.18), transparent 55%), var(--indigo);">
+<section class="hero landing-section" style="position:relative;padding:44px 28px 88px;overflow:hidden;background:radial-gradient(ellipse at 78% 18%, rgba(217,169,61,0.18), transparent 55%), var(--indigo);">
   <div class="hero-inner">
     <div>
       <div class="kicker">Recipe cards from working chefs</div>
