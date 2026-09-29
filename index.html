@@ -459,6 +459,7 @@
   .row-track .card-art .num{display:none;}
   .card-chef-line{display:flex;align-items:center;gap:8px;min-width:0;margin-bottom:-4px;}
   .card-chef-line .card-chef{margin-bottom:0;min-width:0;}
+  .pm-chef-line{margin:0 0 8px;padding-right:64px;}
   .card-chef-pic{flex:none;width:26px;height:26px;border-radius:50%;overflow:hidden;
     border:1.5px solid var(--gold);background:#3A2318;color:#F2EAD9;
     display:flex;align-items:center;justify-content:center;font-family:'Fraunces',serif;font-weight:700;font-size:0.6rem;text-decoration:none;}
@@ -765,7 +766,6 @@
     <div class="shop-head">
       <div>
         <h2>Recipe cards</h2>
-        <p>Printed cards, £1.99 each plus postage. Posted to your door, ready for the kitchen counter.</p>
       </div>
     </div>
 
@@ -1332,11 +1332,14 @@
         ? '<img class="mock-photo" src="' + photoEl.src + '" alt="">'
         : (isBox ? BOX_THUMB_ICON : card.querySelector('.card-art svg').outerHTML));
     let selected = styleSet[0].id;
+    // Cards on the Recipes tab carry their chef's name + picture; show it in the pop-up too, linking to the chef's page.
+    const chefLineEl = card.dataset.chefSlug ? card.querySelector('.card-chef-line') : null;
+    const chefLine = chefLineEl ? chefLineEl.outerHTML.replace('class="card-chef-line"', 'class="card-chef-line pm-chef-line"') : '';
 
     function draw(){
       const styleName = styleSet.find(s => s.id === selected).name;
       const media = mediaFor(selected);
-      productBody.innerHTML =
+      productBody.innerHTML = chefLine +
         '<h3>' + name + '</h3>' +
         '<p class="desc">' + desc + '</p>' +
         '<span class="price">£' + price.toFixed(2) + '</span>' +
@@ -1358,6 +1361,8 @@
         '<button class="product-add" id="productAdd" type="button">Add to cart — £' + price.toFixed(2) + '</button>' +
         (isBox ? '' : '<button class="product-link" id="productLink" type="button" aria-label="Share this card" title="Share this card">' + SHARE_ICON + '</button>');
 
+      const chefPic = productBody.querySelector('.pm-chef-line .card-chef-pic');
+      if(chefPic) chefPic.addEventListener('click', e => { e.preventDefault(); const to = chefPic.getAttribute('href'); closeProduct(); location.hash = to; });
       const linkBtn = document.getElementById('productLink');
       if(linkBtn) linkBtn.addEventListener('click', shareCard);
       productBody.querySelectorAll('.style-option').forEach(btn => {
