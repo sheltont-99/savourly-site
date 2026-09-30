@@ -16,13 +16,15 @@ function escapeHtml(s) {
 // one per product and style: print-files/<ID>-<style>.pdf, e.g. print-files/PR00007-fine-dining.pdf
 // (boxes: -the-farmhouse-box, -the-pantry-box, -the-heirloom-tin). The PDF link opens /pdf/<file> on this page,
 // which fetches the file from GitHub with GITHUB_TOKEN, so only people who can log in here can open it.
+// Links in the page go to /print/<file> first: a small page with Back, Share / Print, Save and Open buttons,
+// because phone browsers often show a bare PDF with no toolbar and no way to share or print it.
 const PRINT_DIR = 'print-files';
 function styleSlug(style) { return String(style || '').toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''); }
 function pdfFile(id, style) { return `${id}-${styleSlug(style)}.pdf`; }
 function pdfLink(id, style) {
   if (!id || !style) return '';
   const file = pdfFile(id, style);
-  return `<a class="pdf" href="/pdf/${encodeURIComponent(file)}" target="_blank" rel="noopener" title="Open ${escapeHtml(PRINT_DIR + '/' + file)}">PDF</a>`;
+  return `<a class="pdf" href="/print/${encodeURIComponent(file)}" title="Open ${escapeHtml(PRINT_DIR + '/' + file)}">PDF</a>`;
 }
 
 // An ID with a small copy-to-clipboard button next to it.
@@ -497,7 +499,7 @@ function pdfTags(id, styles, files) {
   return `<span class="pdfs">` + styles.map((st) => {
     const file = pdfFile(id, st);
     if (files && !files.has(file)) return `<span class="pdf off" title="Not added yet: ${escapeHtml(PRINT_DIR + '/' + file)}">${escapeHtml(st)}</span>`;
-    return `<a class="pdf" href="/pdf/${encodeURIComponent(file)}" target="_blank" rel="noopener" title="Open ${escapeHtml(PRINT_DIR + '/' + file)}">${escapeHtml(st)}</a>`;
+    return `<a class="pdf" href="/print/${encodeURIComponent(file)}" title="Open ${escapeHtml(PRINT_DIR + '/' + file)}">${escapeHtml(st)}</a>`;
   }).join('') + `</span>`;
 }
 
@@ -560,7 +562,7 @@ async function setPosted(request, env, posted) {
 }
 
 // Streams a print PDF from the private repo. Only reachable through Cloudflare Access (see fetch()).
-async function printPdf(env, file) {
+async function printPdf(env, file, download) {
   const note = (title, msg, status) => new Response(`<!doctype html><meta charset="utf-8"><title>${escapeHtml(title)}</title><body style="font:16px system-ui;padding:2rem;max-width:40rem"><h1 style="font-size:1.2rem">${escapeHtml(title)}</h1><p>${msg}</p></body>`, { status, headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' } });
   if (!env.GITHUB_TOKEN) return note('PDFs not set up', 'This page needs the <b>GITHUB_TOKEN</b> secret (the same one the weekly report uses) to open print files.', 503);
   const res = await gh(env, `/contents/${PRINT_DIR}/${file}`, { headers: { Accept: 'application/vnd.github.raw' } });
@@ -568,10 +570,75 @@ async function printPdf(env, file) {
   if (!res.ok) return note("Couldn't open the print file", `GitHub said ${res.status}. Check the GITHUB_TOKEN secret still works and can read ${escapeHtml(REPORTS_REPO)}.`, 502);
   return new Response(res.body, { headers: {
     'content-type': 'application/pdf',
-    'content-disposition': `inline; filename="${file}"`,
+    'content-disposition': `${download ? 'attachment' : 'inline'}; filename="${file}"`,
     'cache-control': 'private, no-store',
     'x-content-type-options': 'nosniff',
   } });
+}
+
+// The page a PDF link opens: big phone-friendly buttons around the file.
+// Share / Print uses the phone's own share sheet (which includes Print); computers print the preview instead.
+function printPage(file) {
+  const f = escapeHtml(file);
+  const src = `/pdf/${encodeURIComponent(file)}`;
+  return new Response(`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${f} · Savourly</title>
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;background:#faf7f0;color:#20293a}
+  header{position:sticky;top:0;background:#faf7f0;border-bottom:1px solid #e6dfd0;padding:12px 16px;z-index:1}
+  .top{display:flex;align-items:center;gap:12px;max-width:900px;margin:0 auto}
+  .back{font-size:1rem;font-weight:600;color:#8A5A2B;text-decoration:none;padding:8px 0;white-space:nowrap}
+  .name{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.85rem;color:#5b6475;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .btns{display:flex;flex-wrap:wrap;gap:8px;max-width:900px;margin:10px auto 0}
+  .btn{flex:1 1 0;min-width:0;display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:0 14px;border-radius:10px;border:1px solid #d9cfbb;background:#fff;color:#20293a;font:inherit;font-weight:600;font-size:.95rem;text-decoration:none;cursor:pointer;white-space:nowrap}
+  .btn.main{background:#20293a;border-color:#20293a;color:#fff}
+  .btn[disabled]{opacity:.5}
+  .msg{max-width:900px;margin:8px auto 0;font-size:.9rem;color:#8a2b2b;min-height:0}
+  .msg:empty{display:none}
+  main{max-width:900px;margin:0 auto;padding:12px 16px 24px}
+  iframe{display:block;width:100%;height:calc(100vh - 170px);min-height:420px;border:1px solid #e6dfd0;border-radius:8px;background:#fff}
+  .tip{font-size:.8rem;color:#5b6475;margin:8px 0 0}
+</style></head><body>
+<header>
+  <div class="top"><a class="back" id="back" href="/">← Back</a><span class="name">${f}</span></div>
+  <div class="btns">
+    <button class="btn main" id="share" type="button" disabled>Loading…</button>
+    <a class="btn" href="${src}?download=1" download="${f}">Save</a>
+    <a class="btn" href="${src}" target="_blank" rel="noopener">Open</a>
+  </div>
+  <div class="msg" id="msg" role="status"></div>
+</header>
+<main>
+  <iframe id="doc" src="${src}" title="${f}"></iframe>
+  <p class="tip">On a phone the preview may show only the first page; Share / Print, Save and Open all use the full file.</p>
+</main>
+<script>
+  const FILE = ${JSON.stringify(file)}, SRC = ${JSON.stringify(src)};
+  const btn = document.getElementById('share'), msg = document.getElementById('msg');
+  document.getElementById('back').addEventListener('click', (e) => {
+    if (history.length > 1 && document.referrer && new URL(document.referrer).origin === location.origin) { e.preventDefault(); history.back(); }
+  });
+  let pdfFile = null;
+  // Fetch the file up front: phones only open the share sheet straight from a tap, with no waiting in between.
+  fetch(SRC, { credentials: 'same-origin' }).then(async (r) => {
+    if (!r.ok) throw new Error(r.status === 404 ? "This print file hasn't been added yet." : "Couldn't load the print file (" + r.status + ").");
+    pdfFile = new File([await r.blob()], FILE, { type: 'application/pdf' });
+    const canShare = navigator.canShare && navigator.canShare({ files: [pdfFile] });
+    btn.textContent = canShare ? 'Share / Print' : 'Print';
+    btn.disabled = false;
+  }).catch((e) => { btn.textContent = 'Share / Print'; msg.textContent = e.message; });
+  btn.addEventListener('click', () => {
+    msg.textContent = '';
+    if (pdfFile && navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
+      navigator.share({ files: [pdfFile], title: FILE }).catch((e) => { if (e.name !== 'AbortError') msg.textContent = "Couldn't open sharing. Try Save, then share it from Files."; });
+      return;
+    }
+    try { document.getElementById('doc').contentWindow.focus(); document.getElementById('doc').contentWindow.print(); }
+    catch { window.open(SRC, '_blank'); }
+  });
+</script>
+</body></html>`, { headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'private, no-store', 'x-frame-options': 'SAMEORIGIN' } });
 }
 
 export default {
@@ -585,7 +652,9 @@ export default {
     if (request.method === 'POST' && url.pathname === '/post') return setPosted(request, env, true);
     if (request.method === 'POST' && url.pathname === '/unpost') return setPosted(request, env, false);
     const pdf = url.pathname.match(/^\/pdf\/(PR\d{5}-[a-z0-9]+(?:-[a-z0-9]+)*\.pdf)$/);
-    if (request.method === 'GET' && pdf) return printPdf(env, pdf[1]);
+    if (request.method === 'GET' && pdf) return printPdf(env, pdf[1], url.searchParams.get('download') === '1');
+    const printView = url.pathname.match(/^\/print\/(PR\d{5}-[a-z0-9]+(?:-[a-z0-9]+)*\.pdf)$/);
+    if (request.method === 'GET' && printView) return printPage(printView[1]);
     if (request.method === 'GET' && url.pathname === '/report.xlsx') {
       const range = ['last', 'this', 'all'].includes(url.searchParams.get('range')) ? url.searchParams.get('range') : 'last';
       const data = await reportData(env, range);
