@@ -957,7 +957,12 @@
       bio:"Carlos Hardwick cooks simple, warming food for everyday kitchens. Each card below is a single recipe, tested for a home stove and written the way he'd explain it to you.",
       aboutH:"Simple, warming food for every day.",
       aboutP:["Carlos keeps his recipes short and honest: a handful of good ingredients, one pan where possible, and nothing you'd need to hunt for.", "More of his cards are on the way."],
-      stats:[["1","recipe card published"],["2026","joined Savourly"],["More","cards on the way"]], total:1, bundle:1.99}
+      stats:[["1","recipe card published"],["2026","joined Savourly"],["More","cards on the way"]], total:1, bundle:1.99},
+    {id:"CHEF00011", name:"Katarina Gaukrodger", cuisine:"Home cooking", role:"Chef", pron:"her", photo:"images/CHEF00011-portrait.jpg",
+      bio:"Katarina Gaukrodger cooks generous, seasonal food for everyday kitchens. Each card below is a single recipe, tested for a home stove and written the way she'd explain it to you.",
+      aboutH:"Seasonal food, made to share.",
+      aboutP:["Katarina keeps her recipes straightforward: good ingredients, clear steps, and nothing you'd need to hunt for.", "More of her cards are on the way."],
+      stats:[["New","to Savourly"],["2026","joined Savourly"],["More","cards on the way"]], total:0, bundle:0}
   ];
   CHEFS.forEach(c => { c.slug = c.name.toLowerCase().replace(/[^a-z]+/g,'-').replace(/^-|-$/g,''); });
   function chefHref(c){ return '#chef/' + c.slug; }

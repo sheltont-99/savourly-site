@@ -63,6 +63,11 @@
       "id": "CHEF00010",
       "name": "Carlos Hardwick",
       "hidden": false
+    },
+    {
+      "id": "CHEF00011",
+      "name": "Katarina Gaukrodger",
+      "hidden": true
     }
   ],
   "products": [
