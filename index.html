@@ -571,6 +571,7 @@
     display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap;
     background:rgba(217,169,61,0.06);
   }
+  .bundle[hidden]{display:none;}
   .bundle h3{font-size:1.25rem;}
   .bundle p{color:var(--cream-dim);margin-top:6px;font-size:0.92rem;max-width:48ch;}
 
@@ -1629,7 +1630,8 @@
     shop.querySelector('.grid').innerHTML = chefCardsHTML(c.id);
     warmPreviews(shop);
     const bundle = shop.querySelector('.bundle');
-    if(bundle){
+    if(bundle) bundle.hidden = !c.total;
+    if(bundle && c.total){
       bundle.querySelector('h3').textContent = 'The full collection — ' + c.total + ' cards';
       bundle.querySelector('p').textContent = 'Every recipe ' + parts[0] + ' has published to date, printed and posted as one set. New cards added and shipped automatically as ' + (c.pron === 'his' ? 'he' : 'she') + ' publishes them.';
       const bb = bundle.querySelector('.btn'); if(bb) bb.textContent = 'Get the bundle — £' + c.bundle;
