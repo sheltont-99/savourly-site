@@ -963,6 +963,11 @@
       bio:"Katarina Gaukrodger cooks generous, seasonal food for everyday kitchens. Each card below is a single recipe, tested for a home stove and written the way she'd explain it to you.",
       aboutH:"Seasonal food, made to share.",
       aboutP:["Katarina keeps her recipes straightforward: good ingredients, clear steps, and nothing you'd need to hunt for.", "More of her cards are on the way."],
+      stats:[["New","to Savourly"],["2026","joined Savourly"],["More","cards on the way"]], total:0, bundle:0},
+    {id:"CHEF00012", name:"Aquifolium Allen", cuisine:"Home cooking", role:"Chef", pron:"their",
+      bio:"Aquifolium Allen cooks honest, seasonal food for everyday kitchens. Each card below is a single recipe, tested for a home stove and written the way they'd explain it to you.",
+      aboutH:"Honest food for every season.",
+      aboutP:["Aquifolium keeps their recipes clear and unfussy: good ingredients, simple steps, and nothing you'd need to hunt for.", "More of their cards are on the way."],
       stats:[["New","to Savourly"],["2026","joined Savourly"],["More","cards on the way"]], total:0, bundle:0}
   ];
   CHEFS.forEach(c => { c.slug = c.name.toLowerCase().replace(/[^a-z]+/g,'-').replace(/^-|-$/g,''); });
@@ -1633,7 +1638,7 @@
     if(bundle) bundle.hidden = !c.total;
     if(bundle && c.total){
       bundle.querySelector('h3').textContent = 'The full collection — ' + c.total + ' cards';
-      bundle.querySelector('p').textContent = 'Every recipe ' + parts[0] + ' has published to date, printed and posted as one set. New cards added and shipped automatically as ' + (c.pron === 'his' ? 'he' : 'she') + ' publishes them.';
+      bundle.querySelector('p').textContent = 'Every recipe ' + parts[0] + ' has published to date, printed and posted as one set. New cards added and shipped automatically as ' + ({his:'he publishes', her:'she publishes'}[c.pron] || 'they publish') + ' them.';
       const bb = bundle.querySelector('.btn'); if(bb) bb.textContent = 'Get the bundle — £' + c.bundle;
     }
     about.querySelector('h2').textContent = c.aboutH;
