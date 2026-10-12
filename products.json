@@ -152,6 +152,21 @@
       "hidden": false
     },
     {
+      "id": "PR00057",
+      "name": "Thousand Layer Apple Cake",
+      "chefId": "CHEF00008",
+      "cuisine": "French",
+      "type": "card",
+      "price": 1.99,
+      "description": "Wafer-thin apple slices baked in a vanilla and cinnamon custard batter until they set into dozens of delicate layers, finished with an apricot glaze.",
+      "thumbnail": "images/PR00057-thumbnail.jpg",
+      "preview": "images/PR00057-preview.jpg",
+      "previews": {
+        "vibrant": "images/PR00057-preview-vibrant.jpg"
+      },
+      "hidden": false
+    },
+    {
       "id": "PR00008",
       "name": "Tagliatelle al Ragù",
       "chefId": "CHEF00002",
