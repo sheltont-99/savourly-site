@@ -320,7 +320,77 @@ async function counts(env) {
        COUNT(*) AS allc
      FROM orders`
   ).first();
-  return { topost: row?.topost || 0, posted: row?.posted || 0, all: row?.allc || 0 };
+  let attention = null;
+  try { attention = (await env.DB.prepare(`SELECT COUNT(*) AS n FROM print_jobs WHERE status='needs_attention'`).first())?.n || null; } catch {} // before the print tables exist
+  return { topost: row?.topost || 0, posted: row?.posted || 0, all: row?.allc || 0, attention };
+}
+
+// ============================================================================
+// Printing tab: what the separate savourly-print Worker has sent to Stannp.
+// Reads its tables (print-worker/schema.sql); Retry / Done by hand change one job.
+// ============================================================================
+const PRINT_STATUS = {
+  queued: ['Waiting', 'pending'], proof: ['Proof ready', 'proof'], sent: ['Sent to Stannp', 'paid'],
+  printing: ['Printing', 'paid'], dispatched: ['Posted', 'posted'], local_delivery: ['Out for delivery', 'posted'],
+  delivered: ['Delivered', 'posted'], returned: ['Returned', 'bad'], cancelled: ['Cancelled', 'pending'],
+  needs_attention: ['Needs attention', 'bad'], done_by_hand: ['Done by hand', 'posted'], no_cards: ['No cards to print', 'pending'],
+};
+
+async function printingPage(env, url) {
+  const c = await counts(env);
+  let status = null, jobs = [];
+  try {
+    const st = await env.DB.prepare(`SELECT value FROM print_settings WHERE key='status'`).first();
+    status = st ? JSON.parse(st.value) : {};
+    jobs = (await env.DB.prepare(`SELECT * FROM print_jobs WHERE status != 'no_cards' ORDER BY CASE status WHEN 'needs_attention' THEN 0 WHEN 'queued' THEN 1 ELSE 2 END, id DESC LIMIT 300`).all()).results;
+  } catch {
+    return shell('printing', c, `<section class="group pad"><h2 class="plain">Printing isn't set up yet</h2><p>Run <b>print-worker/schema.sql</b> in Cloudflare → D1 → savourly-orders → Console, then set up the <b>savourly-print</b> Worker (see SETUP.md).</p></section>`);
+  }
+  const s = status || {};
+  const modeLabel = { off: 'Off — nothing is sent', proof: 'Proof only — nothing prints', live: s.stripeLive ? (s.liveOnly ? 'Live for listed emails only (others get proofs)' : 'Live — cards print and post') : 'Live, but Stripe is in test mode — proofs only' }[s.mode] || 'Not run yet';
+  const lastRun = s.lastRun ? new Date(s.lastRun) : null;
+  const stale = !lastRun || Date.now() - lastRun.getTime() > 20 * 60000;
+  const attention = jobs.filter((j) => j.status === 'needs_attention').length;
+  const flash = url.searchParams.get('done');
+  const banners = [
+    flash ? `<div class="flash ok">${escapeHtml(flash)}</div>` : '',
+    stale ? `<div class="flash bad">The print Worker hasn't run ${lastRun ? `since ${escapeHtml(fmtDate(s.lastRun))}` : 'yet'}. Check savourly-print has its Cron Trigger (every 5 minutes).</div>` : '',
+    s.capHit ? `<div class="flash bad">Daily cap reached: ${escapeHtml(`£${Number(s.spent).toFixed(2)} of £${Number(s.cap).toFixed(2)}`)} spent today. Live cards wait until midnight.</div>` : '',
+    attention ? `<div class="flash bad">${attention} card${attention === 1 ? ' needs' : 's need'} attention: see below.</div>` : '',
+    s.mode && s.mode !== 'off' && s.keyReady === false ? `<div class="flash bad">STANNP_MODE is on but the STANNP_API_KEY secret is missing.</div>` : '',
+  ].join('');
+  const head = `<section class="group pad">
+      <h2 class="plain">Stannp printing</h2>
+      <p><b>Switch:</b> ${escapeHtml(modeLabel)}${s.mode === 'live' ? ` · <b>Today:</b> £${Number(s.spent || 0).toFixed(2)} of £${Number(s.cap || 20).toFixed(2)} cap` : ''}</p>
+      <p class="hint">Last checked ${lastRun ? escapeHtml(fmtDate(s.lastRun)) : 'never'} · alert emails ${s.emailReady ? 'on' : 'not set up'} · change the switch in Cloudflare → savourly-print → Settings → Variables (STANNP_MODE: off / proof / live).</p>
+    </section>`;
+  const rows = jobs.map((j) => {
+    const [label, cls] = PRINT_STATUS[j.status] || [j.status, 'pending'];
+    const actions = j.status === 'needs_attention'
+      ? `<form method="post" action="/printjob" class="pj"><input type="hidden" name="id" value="${Number(j.id)}"><button class="btn" name="do" value="retry">Retry</button><button class="btn-ghost" name="do" value="hand">Done by hand</button></form>`
+      : '';
+    return `<article class="order pjob">
+      <div class="top"><strong class="ref">${escapeHtml(j.order_ref)}</strong><span class="dim">card ${Number(j.line_no)} · copy ${Number(j.copy_no)}</span><span class="pill pill-${cls}">${escapeHtml(label)}</span></div>
+      <div class="pmain">${j.product_id ? idTag(j.product_id) : ''}${escapeHtml(j.style ? `${j.product_name || ''} — ${j.style}` : j.product_name || '')}${pdfLink(j.product_id, j.style)}</div>
+      <div class="pmeta">${j.mode ? `<span>${j.mode === 'live' ? 'Live' : 'Proof'}${j.cost != null ? ` · £${Number(j.cost).toFixed(2)}` : ''}</span>` : ''}${/^https:\/\//.test(j.proof_url || '') ? `<a href="${escapeHtml(j.proof_url)}" target="_blank" rel="noopener">Stannp proof ↗</a>` : ''}${j.sent_at ? `<span class="dim">${escapeHtml(fmtDate(j.sent_at))}</span>` : ''}</div>
+      ${j.last_error ? `<div class="perr">${escapeHtml(j.last_error)}</div>` : ''}${actions}
+    </article>`;
+  }).join('');
+  return shell('printing', c, banners + head + (rows || '<div class="empty">No cards sent to Stannp yet. Only orders paid after printing was set up are picked up.</div>'));
+}
+
+async function printJobAction(request, env) {
+  const origin = request.headers.get('origin');
+  if (origin && origin !== new URL(request.url).origin) return new Response('Forbidden', { status: 403 });
+  const form = await request.formData();
+  const id = Number(form.get('id'));
+  const action = form.get('do');
+  if (!Number.isInteger(id) || !['retry', 'hand'].includes(action)) return new Response('Bad request', { status: 400 });
+  const r = action === 'retry'
+    ? await env.DB.prepare(`UPDATE print_jobs SET status='queued', attempts=0, last_error=NULL, updated_at=? WHERE id=? AND status='needs_attention'`).bind(new Date().toISOString(), id).run()
+    : await env.DB.prepare(`UPDATE print_jobs SET status='done_by_hand', updated_at=? WHERE id=? AND status='needs_attention'`).bind(new Date().toISOString(), id).run();
+  const msg = !r?.meta?.changes ? 'Nothing changed (it was already handled).' : action === 'retry' ? 'Queued again: it will be sent within 5 minutes.' : 'Marked as done by hand.';
+  return Response.redirect(new URL(`/?view=printing&done=${encodeURIComponent(msg)}`, request.url).toString(), 303);
 }
 
 async function page(env, view) {
@@ -360,7 +430,7 @@ async function page(env, view) {
 
 function tabs(view, c) {
   const t = (key, label, n) => `<a class="tab ${view === key ? 'on' : ''}" href="/?view=${key}">${label}${n == null ? '' : ` <span>${n}</span>`}</a>`;
-  return t('topost', 'To post', c.topost) + t('posted', 'Posted', c.posted) + t('all', 'All', c.all) + t('products', 'Products', c.products) + t('reports', 'Reports');
+  return t('topost', 'To post', c.topost) + t('posted', 'Posted', c.posted) + t('all', 'All', c.all) + t('printing', 'Printing', c.attention || null) + t('products', 'Products', c.products) + t('reports', 'Reports');
 }
 
 function shell(view, c, body) {
@@ -446,6 +516,14 @@ function shell(view, c, body) {
   .flash.ok{background:#dcfce7;color:#166534}
   .flash.bad{background:#fee2e2;color:#991b1b}
   .hid{font-size:.72rem;font-weight:600;background:#f3f4f6;color:#6b7280;border-radius:99px;padding:2px 8px;margin-left:6px}
+  .pill-proof{background:#e0e7ff;color:#3730a3}
+  .pill-bad,.tab.on span.bad{background:#fee2e2;color:#991b1b}
+  .pjob .pmain{margin:10px 0 6px;font-size:.95rem}
+  .pjob .pmeta{display:flex;gap:14px;flex-wrap:wrap;align-items:center;font-size:.85rem}
+  .pjob .pmeta a{color:#8A5A2B}
+  .perr{margin-top:8px;padding:8px 10px;border-radius:8px;background:#fef2f2;color:#991b1b;font-size:.85rem}
+  .pj{display:flex;gap:8px;margin-top:10px}
+  .pj .btn,.pj .btn-ghost{padding:8px 12px;font-size:.85rem}
   /* Orders views: wide, one thin row per order on bigger screens */
   .v-orders main{max-width:1280px}
   @media (min-width:900px){
@@ -460,7 +538,7 @@ function shell(view, c, body) {
     .v-orders .foot form{margin-left:0}
     .v-orders .btn,.v-orders .btn-ghost{padding:8px 12px;font-size:.85rem}
   }
-</style></head><body class="${view === 'products' || view === 'reports' ? 'v-products' : 'v-orders'}">
+</style></head><body class="${view === 'products' || view === 'reports' || view === 'printing' ? 'v-products' : 'v-orders'}">
 <header><h1>Savourly orders</h1><nav class="tabs">${tabs(view, c)}</nav></header>
 <main>${body}</main>
 <script>
@@ -651,6 +729,7 @@ export default {
     const url = new URL(request.url);
     if (request.method === 'POST' && url.pathname === '/post') return setPosted(request, env, true);
     if (request.method === 'POST' && url.pathname === '/unpost') return setPosted(request, env, false);
+    if (request.method === 'POST' && url.pathname === '/printjob') return printJobAction(request, env);
     const pdf = url.pathname.match(/^\/pdf\/(PR\d{5}-[a-z0-9]+(?:-[a-z0-9]+)*\.pdf)$/);
     if (request.method === 'GET' && pdf) return printPdf(env, pdf[1], url.searchParams.get('download') === '1');
     const printView = url.pathname.match(/^\/print\/(PR\d{5}-[a-z0-9]+(?:-[a-z0-9]+)*\.pdf)$/);
@@ -674,6 +753,7 @@ export default {
       const view = url.searchParams.get('view') || 'topost';
       if (view === 'products') return productsPage(env);
       if (view === 'reports') return reportsPage(env, url);
+      if (view === 'printing') return printingPage(env, url);
       return page(env, view);
     }
     return new Response('Not found', { status: 404 });

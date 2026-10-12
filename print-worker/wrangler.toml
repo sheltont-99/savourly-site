@@ -1,0 +1,26 @@
+# Reference only: the Worker is set up and pasted in the Cloudflare dashboard (see SETUP.md → "Printing with Stannp").
+name = "savourly-print"
+main = "src/index.js"
+compatibility_date = "2026-09-01"
+
+[triggers]
+crons = ["*/5 * * * *"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "savourly-orders"
+database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+
+[[send_email]]
+name = "EMAIL"
+
+[vars]
+STANNP_MODE = "off"          # off | proof | live
+STRIPE_IS_LIVE = "no"        # "yes" only once Stripe is in live mode; until then "live" only makes proofs
+LIVE_ONLY_EMAILS = ""        # optional: comma-separated; when set, only these customers' orders print for real
+DAILY_CAP_GBP = "20"
+ALERT_TO = ""                # your email (verified in Cloudflare Email Routing)
+ALERT_FROM = "alerts@savourlyco.com"
+SITE_URL = "https://savourlyco.com"
+
+# Secrets (Settings → Variables and Secrets, type "Secret"): STANNP_API_KEY, STANNP_WEBHOOK_SECRET, GITHUB_TOKEN

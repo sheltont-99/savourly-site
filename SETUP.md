@@ -15,6 +15,11 @@ This repo is public. Nothing here is secret; keys and passwords live only in Clo
                                                                ▼
  You ──email login (Cloudflare Access)──► savourly-admin ──► D1 database "savourly-orders"
                                                │  Products tab reads products.json (view only)
+                                               │  Printing tab reads the print jobs
+                                                                     ▲
+                 savourly-print (every 5 min) ── reads paid orders ──┘── sends cards ──► Stannp (print + post)
+                                    ▲                                                      │
+                                    └──────────── status webhook (printing, posted…) ◄─────┘
 ```
 
 | Piece | Where | What it does |
@@ -25,6 +30,7 @@ This repo is public. Nothing here is secret; keys and passwords live only in Clo
 | Order log | Cloudflare Worker **savourly-admin** → https://savourly-admin.shelts-tom.workers.dev | Your private page: To post / Posted / All / Products (IDs, prices, sales, Hidden column, a print-PDF button per style; view only) / Reports (Excel downloads, weekly email). Locked with Cloudflare Access (email one-time code). |
 | Database | Cloudflare D1 **savourly-orders** | Every order: ref, customer, address, items (product ID, name, style, qty, price), totals, paid/posted times. |
 | Payments | Stripe (currently **test mode / sandbox**) | Takes the money; holds card details; sends "paid" webhooks. |
+| Printing | Cloudflare Worker **savourly-print** → https://savourly-print.shelts-tom.workers.dev (shows "Not found"; that's normal) | Every 5 minutes, sends newly paid recipe cards to Stannp to print and post, following the off / proof / live switch. Separate from checkout: if it's off or broken, orders are still taken. See *Printing with Stannp*. |
 
 ## Domain: savourlyco.com
 
@@ -61,8 +67,9 @@ Cloudflare doesn't deploy from this repo automatically. After changing Worker co
 |---|---|---|
 | `worker/src/index.js` | **savourly-checkout** | `Savourly checkout worker (public …` |
 | `admin-worker/src/index.js` | **savourly-admin** | `Savourly admin — your private orders page.` |
+| `print-worker/src/index.js` | **savourly-print** | `Savourly print worker — sends paid recipe cards to Stannp …` |
 
-Quick check that each Worker has the right code: the checkout URL should say **"Not found"**; the admin URL should show your orders. If admin says "Not found", it has the checkout code in it.
+Quick check that each Worker has the right code: the checkout and print URLs should say **"Not found"**; the admin URL should show your orders. If admin says "Not found", it has the checkout or print code in it. If the Printing tab says the print Worker "hasn't run", savourly-print has the wrong code or no Cron Trigger.
 
 ## Cloudflare settings (names only; values are secret)
 
@@ -77,7 +84,9 @@ Quick check that each Worker has the right code: the checkout URL should say **"
   - Secret `GITHUB_TOKEN`: a fine-grained GitHub token for **that repo only**, with *Contents: Read and write* (1-year expiry). See *Create or renew the GitHub token* below. Without it the PDF links show "PDFs not set up".
   - Cron Trigger `0 7 * * 1` (Settings → Trigger events): Mondays 07:00 UTC, which is 8am in summer and 7am in winter.
 
-**D1 `savourly-orders`**: table `orders` (see `worker/schema.sql`; `posted_at` was added later with `ALTER TABLE orders ADD COLUMN posted_at TEXT;`).
+**savourly-print**: Access protection **off** (Stannp must reach its webhook; it shows nothing else). See *Printing with Stannp* for its settings.
+
+**D1 `savourly-orders`**: table `orders` (see `worker/schema.sql`; `posted_at` was added later with `ALTER TABLE orders ADD COLUMN posted_at TEXT;`). Printing adds `print_jobs`, `print_settings` and `print_alerts` (`print-worker/schema.sql`).
 
 ## Stripe settings
 
@@ -132,6 +141,45 @@ The key lives in your GitHub **account** settings, not the repo's settings.
 
 **Renewing:** GitHub emails you before the token expires. When it does, repeat steps 1–5; editing the existing `GITHUB_TOKEN` secret is fine. Until you renew, the order log's PDF links stop opening and weekly reports stop saving; everything else keeps working.
 
+## Printing with Stannp
+
+Paid recipe cards are printed and posted by **Stannp** (A5 enveloped postcards, 350gsm uncoated, one card per envelope). The plan and costs are in the *Savourly × Stannp Build Spec* doc. Recipe boxes are not sent; they're still posted by hand.
+
+**How it works.** Every 5 minutes savourly-print looks for orders paid since printing was set up, makes one job per card copy (3 copies = 3 jobs), and sends each to Stannp with the private print PDF (`savourly-reports/print-files/<ID>-<style>.pdf`, read with its own read-only `GITHUB_TOKEN`) and the customer's address. Stannp then reports printing → posted → delivered back to it. Everything shows on the admin **Printing** tab.
+
+**The switch: `STANNP_MODE`** (Cloudflare → savourly-print → Settings → Variables and Secrets → edit → Deploy). Takes effect within 5 minutes; no code change.
+| Value | What happens |
+|---|---|
+| `off` (default) | Nothing is sent. Cards wait as **Waiting** and go out when the switch is turned back on. |
+| `proof` | Sent with Stannp's test mode: a proof PDF and the real price come back, nothing prints, nothing is charged. |
+| `live` | Printed and posted for real, **only if** `STRIPE_IS_LIVE` is `yes`. Otherwise it still only makes proofs, so test-mode checkouts can never print. If `LIVE_ONLY_EMAILS` is set, only orders from those emails print; the rest get proofs. |
+
+**Safety nets**
+- Only orders paid after `print-worker/schema.sql` was run are ever sent.
+- **Daily cap** `DAILY_CAP_GBP` (default £20, about 20 cards): once reached, live cards wait until midnight UK time. To carry on the same day, raise the cap.
+- **Alert emails** (to `ALERT_TO`): at 80% of the cap, when the cap is reached, when cards need attention, when Royal Mail returns a card, and if the Stannp key is missing. Each goes once.
+- **Needs attention**: a missing print file, an address that can't be read, a line with no product ID, Stannp refusing a card, or 3 failed tries. The Printing tab shows why, with **Retry** (after fixing it) and **Done by hand**.
+- Stannp never posts the same card twice: every card has its own idempotency key.
+- **Refunds aren't automatic yet.** If you refund an order whose cards were sent live, cancel them in Stannp's dashboard (app-eu1.stannp.com) straight away; cancelling only works before Stannp starts printing.
+
+**Settings (savourly-print)**
+- Binding: D1 database `DB` → `savourly-orders`. Optional binding: **Send email** named `EMAIL`.
+- Cron Trigger (Settings → Trigger events): `*/5 * * * *`.
+- Secrets: `STANNP_API_KEY` (Stannp → Settings → API), `STANNP_WEBHOOK_SECRET` (a long random string you make up, also entered in Stannp's webhook), `GITHUB_TOKEN` (a **separate** fine-grained token for `savourly-reports` only, *Contents: Read-only*).
+- Variables: `STANNP_MODE`, `STRIPE_IS_LIVE` (`no` until Stripe is live), `LIVE_ONLY_EMAILS` (optional), `DAILY_CAP_GBP` (`20`), `ALERT_TO` (your email), `ALERT_FROM` (`alerts@savourlyco.com`), `SITE_URL` (`https://savourlyco.com`).
+- Stannp webhook (Stannp → Settings → Webhooks): URL `https://savourly-print.shelts-tom.workers.dev/stannp-webhook`, event `mailpiece_status`, secret = `STANNP_WEBHOOK_SECRET`.
+- Alert emails use Cloudflare Email Routing on savourlyco.com: your address must be a verified destination (Email → Email Routing → Destination addresses). Without it everything else still works; the Printing tab says "alert emails not set up".
+
+**Set it up (one time)**
+1. D1 → savourly-orders → Console: paste all of `print-worker/schema.sql` → Execute.
+2. Workers & Pages → Create → Worker → name `savourly-print` → Deploy → **Edit code** → paste `print-worker/src/index.js` → Deploy.
+3. Its Settings: add the D1 binding, Cron Trigger, secrets and variables above (start with `STANNP_MODE` = `off`).
+4. Admin Worker: paste the updated `admin-worker/src/index.js` for the Printing tab.
+5. Stannp: create the webhook above.
+6. Roll out in stages (from the build spec): `proof` with Stripe test payments → `proof` on real orders for 1–2 weeks (fulfil by hand meanwhile) → `live` with `STRIPE_IS_LIVE` = `yes` and `LIVE_ONLY_EMAILS` = your email → clear `LIVE_ONLY_EMAILS`.
+
+**Pull the plug:** set `STANNP_MODE` to `off`.
+
 ## Everyday tasks
 
 | Task | How |
@@ -145,6 +193,8 @@ The key lives in your GitHub **account** settings, not the repo's settings.
 | Add product photos / print PDFs | Send them to Claude with the product ID (and style for PDFs); see *Product images and print files* |
 | Add or change a chef's photo | Send it to Claude with the chef's name or ID. It's saved as `images/<CHEF ID>-portrait.jpg` and set as `photo:` on the chef's `CHEFS` entry in `index.html`. That one photo is used on the chef's page **and** as the small round picture on each of their cards on the Recipes tab, so both update together. Chefs with no photo show their initials there. |
 | Make a Fine Dining card from a recipe | Paste the recipe (text or a picture) to Claude, which uses the *savourly-recipe-card-pdf-creator* skill |
+| Turn Stannp printing off / on | Cloudflare → savourly-print → Settings → Variables → `STANNP_MODE` = `off` / `proof` / `live` |
+| A card needs attention | Admin → **Printing** → read the reason → fix it (e.g. send Claude the missing print PDF) → **Retry**, or **Done by hand** |
 | Excel report | Admin → **Reports** → *Last week* / *This week so far* / *All orders*; weekly copies in the private repo `savourly-reports/reports/<year>/` |
 
 ID rules: products are `PR` + 5 digits, chefs are `CHEF` + 5 digits (listed under `chefs` in `products.json`, and on each chef's `CHEFS` entry in `index.html`). The next number is always the highest + 1, and IDs are never changed or reused. Products are hidden (`"hidden": true`), not deleted.
@@ -173,4 +223,7 @@ The Summary figures are live Excel formulas over the other sheets. Totals are be
 - **"Couldn't load the recipe cards"**: `products.json` has a JSON mistake (usually a comma). Check the latest commit to it.
 - **"Something went wrong starting checkout"**: check the savourly-checkout code/secrets; look at its Logs in Cloudflare.
 - **Weekly report not in GitHub**: admin → Reports → *Save last week's report to GitHub now* shows the exact error. Check the Cron Trigger exists, the repo is private, and `GITHUB_TOKEN` hasn't expired.
+- **Printing tab: "hasn't run"**: savourly-print is missing its Cron Trigger or has the wrong code (its URL should say "Not found"). Check its Logs.
+- **Cards stay "Waiting"**: `STANNP_MODE` is `off`, the daily cap was reached (banner on the Printing tab), or `STANNP_API_KEY` is missing.
+- **"Print file missing"**: there's no `print-files/<ID>-<style>.pdf` yet (Classic files don't exist yet). Add the file, then **Retry**.
 - **Order stuck on "Not paid"**: webhook problem. Check the Stripe webhook destination's recent deliveries; Stripe retries for 3 days.
