@@ -129,6 +129,14 @@
   }
   .mock-enlarge svg{width:16px;height:16px;stroke:#F2EAD9;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
   .mock-enlarge:hover{background:rgba(20,28,41,0.75);}
+  /* Option C: show the whole A5 card, tap anywhere to zoom */
+  .card-mock.mock-full{background:var(--indigo-deep);border:none;box-shadow:none;padding:20px 0 16px;display:flex;flex-direction:column;align-items:center;gap:10px;cursor:zoom-in;}
+  .mock-full .mock-art{aspect-ratio:148/210;width:56%;height:auto;border-radius:3px;overflow:hidden;box-shadow:0 14px 26px -12px rgba(32,41,58,0.45);transition:transform .2s ease;}
+  .mock-full:hover .mock-art{transform:translateY(-2px);}
+  .mock-full .mock-photo{height:100%;object-fit:contain;}
+  .mock-full .mock-enlarge{position:static;width:auto;height:auto;padding:6px 12px;gap:6px;border-radius:999px;background:#FFFDF7;border:1px solid rgba(185,134,43,0.45);backdrop-filter:none;font:500 0.78rem 'Work Sans',sans-serif;color:var(--cream);}
+  .mock-full .mock-enlarge svg{width:14px;height:14px;stroke:var(--gold);}
+  .mock-full .mock-enlarge:hover{background:#fff;border-color:var(--gold);}
 
   .zoom-overlay{
     display:none;position:fixed;inset:0;z-index:60;
@@ -147,6 +155,11 @@
   .zoom-inner .mock-art svg{width:34%;height:34%;}
   @media (min-width:600px){ .zoom-inner{width:360px;height:calc(360px * 1.4189);} }
   @media (max-width:420px){ .zoom-inner{width:78vw;height:calc(78vw * 1.4189);} }
+  /* Option C: zoom fills the screen so the recipe is readable */
+  .zoom-inner{width:auto;height:min(86vh, calc(92vw * 1.4189));aspect-ratio:148/210;}
+  .zoom-inner .zoom-card .mock-photo{object-fit:contain;}
+  .zoom-inner:has(.zoom-box){width:min(92vw, 640px);height:auto;aspect-ratio:6/5;}
+  .zoom-inner .zoom-box .mock-photo{object-position:center;}
   .zoom-close{
     position:absolute;top:-42px;right:0;width:32px;height:32px;
     background:none;border:none;color:#F2EAD9;font-size:1.6rem;line-height:1;cursor:pointer;
@@ -1355,10 +1368,10 @@
         '<h3>' + name + '</h3>' +
         '<p class="desc">' + desc + '</p>' +
         '<span class="price">£' + price.toFixed(2) + '</span>' +
-        '<div class="card-mock mock-' + selected + '">' +
+        '<div class="card-mock mock-' + selected + (isBox ? '' : ' mock-full') + '" id="mockCard">' +
           '<div class="mock-art">' + media + '</div>' +
           '<button type="button" class="mock-enlarge" id="mockEnlarge" aria-label="Enlarge preview">' +
-            '<svg viewBox="0 0 24 24"><path d="M9 4H5a1 1 0 0 0-1 1v4M15 4h4a1 1 0 0 1 1 1v4M9 20H5a1 1 0 0 1-1-1v-4M15 20h4a1 1 0 0 0 1-1v-4"/></svg>' +
+            '<svg viewBox="0 0 24 24"><path d="M9 4H5a1 1 0 0 0-1 1v4M15 4h4a1 1 0 0 1 1 1v4M9 20H5a1 1 0 0 1-1-1v-4M15 20h4a1 1 0 0 0 1-1v-4"/></svg>' + (isBox ? '' : '<span>Zoom in to read</span>') +
           '</button>' +
         '</div>' +
         '<div class="style-label">' + (isBox ? 'Choose a box style' : 'Choose a card style') + '</div>' +
@@ -1383,7 +1396,8 @@
       productBody.querySelectorAll('.style-option').forEach(btn => {
         btn.addEventListener('click', () => { selected = btn.dataset.style; draw(); });
       });
-      document.getElementById('mockEnlarge').addEventListener('click', (e) => {
+      document.getElementById('mockCard').addEventListener('click', (e) => {
+        if(isBox && !e.target.closest('#mockEnlarge')) return;
         e.stopPropagation();
         openZoom(name, styleName, selected, media);
       });
@@ -1424,7 +1438,7 @@
 
   function openZoom(name, styleName, styleId, media){
     zoomBody.innerHTML =
-      '<div class="card-mock mock-' + styleId + '">' +
+      '<div class="card-mock mock-' + styleId + (BOX_STYLES.some(s => s.id === styleId) ? ' zoom-box' : ' zoom-card') + '">' +
         '<div class="mock-art">' + media + '</div>' +
       '</div>';
     zoomOverlay.classList.add('open');
