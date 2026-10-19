@@ -15,6 +15,11 @@
  *          checkouts can never print), and, if LIVE_ONLY_EMAILS is set, only for orders from those emails
  *          (everything else is sent as a proof).
  *
+ * Cancel / Refund: the order log (savourly-admin) can cancel a card or refund an order. It marks waiting
+ * cards "cancelled" in D1, so this Worker never sends them; a card is claimed ("sending") just before
+ * it goes to Stannp, so a cancel and a send can't both happen to the same card. Orders refunded before
+ * their cards were queued are skipped (orders.refunded_at, added by admin-worker/refunds.sql).
+ *
  * Safety nets: only orders paid after the tables were created are ever sent; a daily spending cap
  * (DAILY_CAP_GBP, default £20, resets at midnight UK time) holds live cards back once reached;
  * failures are marked "Needs attention" in the order log; alert emails go to ALERT_TO.
@@ -129,6 +134,12 @@ async function queueNewOrders(env) {
   if (!results.length) return flagged;
   const types = await loadTypes(env);
   for (const o of results) {
+    if (o.refunded_at) {                                                // refunded from the order log before printing
+      await env.DB.prepare(
+        `INSERT OR IGNORE INTO print_jobs (job_key, order_ref, line_no, copy_no, status, last_error, created_at) VALUES (?, ?, 0, 0, 'no_cards', ?, ?)`
+      ).bind(`${o.order_ref}-0-0`, o.order_ref, 'Refunded before printing — nothing sent.', nowIso()).run();
+      continue;
+    }
     let items = [];
     try { items = JSON.parse(o.items_json || '[]'); } catch {}
     const stmts = [];
@@ -198,7 +209,7 @@ async function sendToStannp(env, s, job, order, recipient, pdfBytes, file, mode)
 }
 
 async function spentToday(env, day) {
-  const r = await env.DB.prepare(`SELECT COALESCE(SUM(cost),0) AS spent, COUNT(*) AS n FROM print_jobs WHERE mode='live' AND spend_day=?`).bind(day).first();
+  const r = await env.DB.prepare(`SELECT COALESCE(SUM(cost),0) AS spent, COUNT(*) AS n FROM print_jobs WHERE mode='live' AND spend_day=? AND status != 'cancelled'`).bind(day).first();
   return { spent: Number(r?.spent || 0), count: Number(r?.n || 0) };
 }
 
@@ -221,7 +232,7 @@ async function processQueue(env, s) {
   for (const job of jobs) {
     const order = job;
     const flag = async (msg, attempts = job.attempts) => {
-      await env.DB.prepare(`UPDATE print_jobs SET status='needs_attention', attempts=?, last_error=?, updated_at=? WHERE id=?`).bind(attempts, msg, nowIso(), job.id).run();
+      await env.DB.prepare(`UPDATE print_jobs SET status='needs_attention', attempts=?, last_error=?, updated_at=? WHERE id=? AND status IN ('queued','sending')`).bind(attempts, msg, nowIso(), job.id).run();
       out.flagged.push(`${job.job_key} (${job.product_id || '?'} ${job.style || ''}): ${msg}`);
     };
     if (order.order_status !== 'paid') { await flag(`The order is now "${order.order_status}", not paid.`); continue; }
@@ -232,6 +243,10 @@ async function processQueue(env, s) {
     const recipient = parseRecipient(order.customer_name, order.shipping_address);
     if (!recipient) { await flag(`Couldn't read the name or address ("${String(order.shipping_address || '').slice(0, 120)}"). Check it, then Retry.`); continue; }
 
+    // Claim the card. If the order log cancelled it a moment ago, this changes nothing and we skip it.
+    const claim = await env.DB.prepare(`UPDATE print_jobs SET status='sending', updated_at=? WHERE id=? AND status='queued'`).bind(nowIso(), job.id).run();
+    if (!claim?.meta?.changes) continue;
+
     const file = `${job.product_id}-${styleSlug(job.style)}.pdf`;
     if (!files.has(file)) files.set(file, await fetchPrintFile(env, file));
     const pf = files.get(file);
@@ -240,7 +255,7 @@ async function processQueue(env, s) {
     if (result.error) {
       const attempts = job.attempts + 1;
       if (result.permanent || attempts >= MAX_ATTEMPTS) await flag(result.error, attempts);
-      else await env.DB.prepare(`UPDATE print_jobs SET attempts=?, last_error=?, updated_at=? WHERE id=?`).bind(attempts, result.error, nowIso(), job.id).run();
+      else await env.DB.prepare(`UPDATE print_jobs SET status='queued', attempts=?, last_error=?, updated_at=? WHERE id=?`).bind(attempts, result.error, nowIso(), job.id).run();
       continue;
     }
     const d = result.data;
@@ -256,6 +271,10 @@ async function processQueue(env, s) {
 async function runOnce(env) {
   const s = settings(env);
   const day = ukDay();
+  // A run that stopped mid-send leaves a card "sending"; put it back after 10 minutes.
+  // Stannp's idempotency key means a resend can never post the same card twice.
+  await env.DB.prepare(`UPDATE print_jobs SET status='queued', updated_at=? WHERE status='sending' AND updated_at < ?`)
+    .bind(nowIso(), new Date(Date.now() - 10 * 60000).toISOString()).run();
   const queueFlagged = await queueNewOrders(env);
   const out = await processQueue(env, s);
   out.flagged.unshift(...queueFlagged);
