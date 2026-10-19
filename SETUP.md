@@ -15,7 +15,7 @@ This repo is public. Nothing here is secret; keys and passwords live only in Clo
                                                                ▼
  You ──email login (Cloudflare Access)──► savourly-admin ──► D1 database "savourly-orders"
                                                │  Products tab reads products.json (view only)
-                                               │  Printing tab reads the print jobs
+                                               │  Orders tab shows each card's print status
                                                                      ▲
                  savourly-print (every 5 min) ── reads paid orders ──┘── sends cards ──► Stannp (print + post)
                                     ▲                                                      │
@@ -27,7 +27,7 @@ This repo is public. Nothing here is secret; keys and passwords live only in Clo
 | Website | `index.html` in this repo → https://savourlyco.com (GitHub Pages with a custom domain; `CNAME` file in this repo; the old https://sheltont-99.github.io/savourly-site/ address redirects there) | Shop, chef pages, cart, checkout form. Builds every card from `products.json`. |
 | Product list | `products.json` (+ photos in `images/`) | The only place products live: IDs, names, chefs, prices, descriptions, hidden flags, postage. |
 | Checkout | Cloudflare Worker **savourly-checkout** → https://savourly-checkout.shelts-tom.workers.dev (shows "Not found" in a browser; that's normal) | Prices the cart from `products.json`, creates the Stripe payment page, saves the order, marks it paid when Stripe confirms. Must stay public. |
-| Order log | Cloudflare Worker **savourly-admin** → https://savourly-admin.shelts-tom.workers.dev | Your private page: To post / Posted / All (each paid order has a **Refund** button) / Printing (each card not yet printed has a **Cancel card** button) / Products (IDs, prices, sales, Hidden column, a print-PDF button per style; view only) / Reports (Excel downloads, weekly email). Locked with Cloudflare Access (email one-time code). |
+| Order log | Cloudflare Worker **savourly-admin** → https://savourly-admin.shelts-tom.workers.dev | Your private page: **Orders** (one tab for every order: each card's print status from Stannp, **Cancel card**, **Retry** / **Done by hand**, **Refund**, and **Mark as posted** for anything posted by hand; filters All / Needs action / Printing / Posted / Refunded / Not paid) / Products (IDs, prices, sales, Hidden column, a print-PDF button per style; view only) / Reports (Excel downloads, weekly email). Locked with Cloudflare Access (email one-time code). |
 | Database | Cloudflare D1 **savourly-orders** | Every order: ref, customer, address, items (product ID, name, style, qty, price), totals, paid/posted times. |
 | Payments | Stripe (currently **test mode / sandbox**) | Takes the money; holds card details; sends "paid" webhooks. |
 | Printing | Cloudflare Worker **savourly-print** → https://savourly-print.shelts-tom.workers.dev (shows "Not found"; that's normal) | Every 5 minutes, sends newly paid recipe cards to Stannp to print and post, following the off / proof / live switch. Separate from checkout: if it's off or broken, orders are still taken. See *Printing with Stannp*. |
@@ -69,7 +69,7 @@ Cloudflare doesn't deploy from this repo automatically. After changing Worker co
 | `admin-worker/src/index.js` | **savourly-admin** | `Savourly admin — your private orders page.` |
 | `print-worker/src/index.js` | **savourly-print** | `Savourly print worker — sends paid recipe cards to Stannp …` |
 
-Quick check that each Worker has the right code: the checkout and print URLs should say **"Not found"**; the admin URL should show your orders. If admin says "Not found", it has the checkout or print code in it. If the Printing tab says the print Worker "hasn't run", savourly-print has the wrong code or no Cron Trigger.
+Quick check that each Worker has the right code: the checkout and print URLs should say **"Not found"**; the admin URL should show your orders. If admin says "Not found", it has the checkout or print code in it. If the Orders tab says the print Worker "hasn't run", savourly-print has the wrong code or no Cron Trigger.
 
 ## Cloudflare settings (names only; values are secret)
 
@@ -148,7 +148,7 @@ The key lives in your GitHub **account** settings, not the repo's settings.
 
 Paid recipe cards are printed and posted by **Stannp** (A5 enveloped postcards, 350gsm uncoated, one card per envelope). The plan and costs are in the *Savourly × Stannp Build Spec* doc. Recipe boxes are not sent; they're still posted by hand.
 
-**How it works.** Every 5 minutes savourly-print looks for orders paid since printing was set up, makes one job per card copy (3 copies = 3 jobs), and sends each to Stannp with the private print PDF (`savourly-reports/print-files/<ID>-<style>.pdf`, read with its own read-only `GITHUB_TOKEN`) and the customer's address. Stannp then reports printing → posted → delivered back to it. Everything shows on the admin **Printing** tab.
+**How it works.** Every 5 minutes savourly-print looks for orders paid since printing was set up, makes one job per card copy (3 copies = 3 jobs), and sends each to Stannp with the private print PDF (`savourly-reports/print-files/<ID>-<style>.pdf`, read with its own read-only `GITHUB_TOKEN`) and the customer's address. Stannp then reports printing → posted → delivered back to it. Everything shows against each order on the admin **Orders** tab.
 
 **The switch: `STANNP_MODE`** (Cloudflare → savourly-print → Settings → Variables and Secrets → edit → Deploy). Takes effect within 5 minutes; no code change.
 | Value | What happens |
@@ -161,7 +161,7 @@ Paid recipe cards are printed and posted by **Stannp** (A5 enveloped postcards, 
 - Only orders paid after `print-worker/schema.sql` was run are ever sent.
 - **Daily cap** `DAILY_CAP_GBP` (default £20, about 20 cards): once reached, live cards wait until midnight UK time. To carry on the same day, raise the cap.
 - **Alert emails** (to `ALERT_TO`): at 80% of the cap, when the cap is reached, when cards need attention, when Royal Mail returns a card, and if the Stannp key is missing. Each goes once.
-- **Needs attention**: a missing print file, an address that can't be read, a line with no product ID, Stannp refusing a card, or 3 failed tries. The Printing tab shows why, with **Retry** (after fixing it) and **Done by hand**.
+- **Needs attention**: a missing print file, an address that can't be read, a line with no product ID, Stannp refusing a card, or 3 failed tries. The order shows why on the Orders tab (under *Needs action*), with **Retry** (after fixing it) and **Done by hand**.
 - Stannp never posts the same card twice: every card has its own idempotency key.
 - **Refund from the order log, not Stripe's dashboard.** The order log's **Refund** button cancels the order's unprinted cards first. A refund made in Stripe's own dashboard isn't seen here and cancels nothing, so cancel those cards with **Cancel card** straight away; cancelling only works before Stannp starts printing.
 
@@ -171,13 +171,13 @@ Paid recipe cards are printed and posted by **Stannp** (A5 enveloped postcards, 
 - Secrets: `STANNP_API_KEY` (Stannp → Settings → API), `STANNP_WEBHOOK_SECRET` (a long random string you make up, also entered in Stannp's webhook), `GITHUB_TOKEN` (a **separate** fine-grained token for `savourly-reports` only, *Contents: Read-only*).
 - Variables: `STANNP_MODE`, `STRIPE_IS_LIVE` (`no` until Stripe is live), `LIVE_ONLY_EMAILS` (optional), `DAILY_CAP_GBP` (`20`), `ALERT_TO` (your email), `ALERT_FROM` (`alerts@savourlyco.com`), `SITE_URL` (`https://savourlyco.com`).
 - Stannp webhook (Stannp → Settings → Webhooks): URL `https://savourly-print.shelts-tom.workers.dev/stannp-webhook`, event `mailpiece_status`, secret = `STANNP_WEBHOOK_SECRET`.
-- Alert emails use Cloudflare Email Routing on savourlyco.com: your address must be a verified destination (Email → Email Routing → Destination addresses). Without it everything else still works; the Printing tab says "alert emails not set up".
+- Alert emails use Cloudflare Email Routing on savourlyco.com: your address must be a verified destination (Email → Email Routing → Destination addresses). Without it everything else still works; nothing else changes.
 
 **Set it up (one time)**
 1. D1 → savourly-orders → Console: paste all of `print-worker/schema.sql` → Execute.
 2. Workers & Pages → Create → Worker → name `savourly-print` → Deploy → **Edit code** → paste `print-worker/src/index.js` → Deploy.
 3. Its Settings: add the D1 binding, Cron Trigger, secrets and variables above (start with `STANNP_MODE` = `off`).
-4. Admin Worker: paste the updated `admin-worker/src/index.js` for the Printing tab.
+4. Admin Worker: paste the updated `admin-worker/src/index.js` (the Orders tab shows print status).
 5. Stannp: create the webhook above.
 6. Roll out in stages (from the build spec): `proof` with Stripe test payments → `proof` on real orders for 1–2 weeks (fulfil by hand meanwhile) → `live` with `STRIPE_IS_LIVE` = `yes` and `LIVE_ONLY_EMAILS` = your email → clear `LIVE_ONLY_EMAILS`.
 
@@ -187,8 +187,8 @@ Paid recipe cards are printed and posted by **Stannp** (A5 enveloped postcards, 
 
 Both are in the order log (savourly-admin), behind your email login.
 
-- **Cancel card** (Printing tab, on each card that hasn't printed): a *Waiting* or *Needs attention* card is simply never sent. A card already *Sent to Stannp* is cancelled in Stannp, which only works before Stannp starts printing; if Stannp refuses, the tab says so and the card will still arrive. Proofs, and cards already printing or posted, have no button. A card shown as *Sending…* is mid-send: refresh in a minute and it can be cancelled.
-- **Refund** (To post / Posted / All, on each paid order): opens a confirm page showing the amount (full by default; lower it for a partial refund), which cards can still be stopped and which are too late. Confirming cancels the unprinted cards (tick box, on by default), then refunds the card payment through Stripe. Tapping twice can't refund twice. A fully refunded order leaves *To post* and shows a *Refunded* badge under *All*. The money takes 5–10 days to reach the customer.
+- **Cancel card** (Orders tab, next to each card that hasn't printed): a *Waiting* or *Needs attention* card is simply never sent. A card already *Sent to Stannp* is cancelled in Stannp, which only works before Stannp starts printing; if Stannp refuses, the tab says so and the card will still arrive. Proofs, and cards already printing or posted, have no button. A card shown as *Sending…* is mid-send: refresh in a minute and it can be cancelled.
+- **Refund** (Orders tab, on each paid order): opens a confirm page showing the amount (full by default; lower it for a partial refund), which cards can still be stopped and which are too late. Confirming cancels the unprinted cards (tick box, on by default), then refunds the card payment through Stripe. Tapping twice can't refund twice. A fully refunded order moves to the *Refunded* filter. The money takes 5–10 days to reach the customer.
 - Cancelled live cards don't count towards the daily print cap. The weekly Excel report still shows totals **before** refunds; check refunds in Stripe.
 
 **Set them up (one time)**
@@ -199,11 +199,20 @@ Both are in the order log (savourly-admin), behind your email login.
 
 Without step 1 or the Stripe key, the Refund page says what's missing and refunds nothing; everything else keeps working.
 
+## The Orders tab
+
+One card per order, newest first. The coloured label by the order number is where the whole order has got to (an order is only as far along as its slowest card):
+*Waiting to print* → *Sent to Stannp* → *Printing* → *Posted* → *Out for delivery* → *Delivered*. Under each product you see each copy's own status, with its cost, a link to Stannp's proof and the buttons for that card.
+- **Post by hand** labels: recipe boxes, orders paid before printing was set up, and cards that only got proofs (proof mode). Press **Mark as posted** when you've sent them.
+- **Needs attention** / **Returned to sender**: something to fix; the reason is shown under the card.
+- Filters along the top: **All** (paid), **Needs action**, **Printing**, **Posted**, **Refunded**, **Not paid** (abandoned checkouts). The red number on the Orders tab is *Needs action*.
+- Old links (`?view=topost`, `posted`, `all`, `printing`) open the matching filter.
+
 ## Everyday tasks
 
 | Task | How |
 |---|---|
-| See / post orders | Admin page → **To post** → *Mark as posted* |
+| See orders | Admin page → **Orders**. *Needs action* lists what needs you: cards that failed, and anything to post by hand (recipe boxes, orders from before printing was set up, proof-only cards) → *Mark as posted* once sent. |
 | Hide / unhide a product | Ask Claude with the product ID (e.g. "hide PR00010"); IDs are in the admin **Products** tab |
 | Add, edit, re-price, reorder products | Edit `products.json` (ask Claude, which uses the *savourly-product-manager* skill) |
 | Change postage | `postage` in `products.json` |
@@ -212,10 +221,10 @@ Without step 1 or the Stripe key, the Refund page says what's missing and refund
 | Add product photos / print PDFs | Send them to Claude with the product ID (and style for PDFs); see *Product images and print files* |
 | Add or change a chef's photo | Send it to Claude with the chef's name or ID. It's saved as `images/<CHEF ID>-portrait.jpg` and set as `photo:` on the chef's `CHEFS` entry in `index.html`. That one photo is used on the chef's page **and** as the small round picture on each of their cards on the Recipes tab, so both update together. Chefs with no photo show their initials there. |
 | Make a Fine Dining card from a recipe | Paste the recipe (text or a picture) to Claude, which uses the *savourly-recipe-card-pdf-creator* skill |
-| Stop a card printing | Admin → **Printing** → **Cancel card** (only before Stannp starts printing) |
+| Stop a card printing | Admin → **Orders** → the order → **Cancel card** next to the card (only before Stannp starts printing) |
 | Refund an order | Admin → the order → **Refund** → check the amount → **Refund £…** (also cancels its unprinted cards) |
 | Turn Stannp printing off / on | Cloudflare → savourly-print → Settings → Variables → `STANNP_MODE` = `off` / `proof` / `live` |
-| A card needs attention | Admin → **Printing** → read the reason → fix it (e.g. send Claude the missing print PDF) → **Retry**, or **Done by hand** |
+| A card needs attention | Admin → **Orders** → *Needs action* → read the reason → fix it (e.g. send Claude the missing print PDF) → **Retry**, or **Done by hand** |
 | Excel report | Admin → **Reports** → *Last week* / *This week so far* / *All orders*; weekly copies in the private repo `savourly-reports/reports/<year>/` |
 
 ID rules: products are `PR` + 5 digits, chefs are `CHEF` + 5 digits (listed under `chefs` in `products.json`, and on each chef's `CHEFS` entry in `index.html`). The next number is always the highest + 1, and IDs are never changed or reused. Products are hidden (`"hidden": true`), not deleted.
@@ -245,8 +254,8 @@ The Summary figures are live Excel formulas over the other sheets. Totals are be
 - **"Couldn't load the recipe cards"**: `products.json` has a JSON mistake (usually a comma). Check the latest commit to it.
 - **"Something went wrong starting checkout"**: check the savourly-checkout code/secrets; look at its Logs in Cloudflare.
 - **Weekly report not in GitHub**: admin → Reports → *Save last week's report to GitHub now* shows the exact error. Check the Cron Trigger exists, the repo is private, and `GITHUB_TOKEN` hasn't expired.
-- **Printing tab: "hasn't run"**: savourly-print is missing its Cron Trigger or has the wrong code (its URL should say "Not found"). Check its Logs.
-- **Cards stay "Waiting"**: `STANNP_MODE` is `off`, the daily cap was reached (banner on the Printing tab), or `STANNP_API_KEY` is missing.
+- **Orders tab: "print Worker hasn't run"**: savourly-print is missing its Cron Trigger or has the wrong code (its URL should say "Not found"). Check its Logs.
+- **Cards stay "Waiting"**: `STANNP_MODE` is `off`, the daily cap was reached (banner on the Orders tab), or `STANNP_API_KEY` is missing.
 - **"Print file missing"**: there's no `print-files/<ID>-<style>.pdf` yet (Classic files don't exist yet). Add the file, then **Retry**.
 - **Refund says "Refund NOT made"**: the reason after the colon is Stripe's. "Invalid API key" or "permission" means `STRIPE_SECRET_KEY` on savourly-admin is wrong, test vs live mixed up, or missing *Refunds: Write*. Any cards it says it cancelled stay cancelled; fix the key and refund again.
 - **"Couldn't cancel … started printing"**: Stannp had already begun; the card will arrive. Refund if needed.

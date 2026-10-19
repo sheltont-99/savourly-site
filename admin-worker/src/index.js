@@ -308,7 +308,12 @@ async function reportsPage(env, url) {
   return shell('reports', c, body);
 }
 
-// Fully refunded orders drop out of "To post" (they stay under All). Needs admin-worker/refunds.sql.
+// ============================================================================
+// Orders tab: the one place for orders. Each order shows what Stannp is doing with
+// each of its printed cards (from the savourly-print Worker's print_jobs table),
+// with Cancel card / Retry / Done by hand, Refund, and Mark as posted for anything
+// posted by hand (recipe boxes, orders from before printing was set up, proof-only cards).
+// ============================================================================
 const NOT_FULLY_REFUNDED = "(refunded_amount IS NULL OR refunded_amount < total - 0.005)";
 let refundColsSeen = false;
 async function hasRefundCols(env) {
@@ -316,80 +321,164 @@ async function hasRefundCols(env) {
   try { await env.DB.prepare(`SELECT refunded_amount, refunded_at, stripe_refund_id FROM orders LIMIT 1`).first(); refundColsSeen = true; } catch {}
   return refundColsSeen;
 }
-const VIEWS = {
-  topost: { label: 'To post', where: "status='paid' AND posted_at IS NULL", order: 'created_at ASC', refundWhere: ` AND ${NOT_FULLY_REFUNDED}` },
-  posted: { label: 'Posted', where: "status='paid' AND posted_at IS NOT NULL", order: 'posted_at DESC' },
-  all: { label: 'All', where: '1=1', order: 'created_at DESC' },
-};
 
-async function counts(env) {
-  const notRefunded = (await hasRefundCols(env)) ? ` AND ${NOT_FULLY_REFUNDED}` : '';
-  const row = await env.DB.prepare(
-    `SELECT
-       SUM(CASE WHEN status='paid' AND posted_at IS NULL${notRefunded} THEN 1 ELSE 0 END) AS topost,
-       SUM(CASE WHEN status='paid' AND posted_at IS NOT NULL THEN 1 ELSE 0 END) AS posted,
-       COUNT(*) AS allc
-     FROM orders`
-  ).first();
-  let attention = null;
-  try { attention = (await env.DB.prepare(`SELECT COUNT(*) AS n FROM print_jobs WHERE status='needs_attention'`).first())?.n || null; } catch {} // before the print tables exist
-  return { topost: row?.topost || 0, posted: row?.posted || 0, all: row?.allc || 0, attention };
+const PRINT_STATUS = {
+  queued: ['Waiting to print', 'pending'], sending: ['Sending…', 'pending'], proof: ['Proof only', 'proof'],
+  sent: ['Sent to Stannp', 'paid'], printing: ['Printing', 'paid'], dispatched: ['Posted', 'posted'],
+  local_delivery: ['Out for delivery', 'posted'], delivered: ['Delivered', 'posted'], returned: ['Returned', 'bad'],
+  cancelled: ['Cancelled', 'pending'], needs_attention: ['Needs attention', 'bad'], done_by_hand: ['Done by hand', 'posted'],
+};
+// How far along a printed card is; an order is only as far along as its slowest card.
+const STEP = { queued: 0, sending: 1, sent: 2, printing: 3, dispatched: 4, local_delivery: 5, delivered: 6, done_by_hand: 6 };
+const STEP_LABEL = [['Waiting to print', 'pending'], ['Waiting to print', 'pending'], ['Sent to Stannp', 'paid'], ['Printing', 'paid'], ['Posted', 'posted'], ['Out for delivery', 'posted'], ['Delivered', 'posted']];
+const FILTERS = [['all', 'All'], ['action', 'Needs action'], ['progress', 'Printing'], ['posted', 'Posted'], ['refunded', 'Refunded'], ['unpaid', 'Not paid']];
+const filterKey = (f) => (FILTERS.some(([k]) => k === f) ? f : 'all');
+const isBoxItem = (it, types) => (types[it.id] ? types[it.id] === 'box' : BOX_STYLES.includes(it.style));
+
+async function loadOrders(env) {
+  const [{ results }, refunds] = await Promise.all([
+    env.DB.prepare(`SELECT * FROM orders ORDER BY created_at DESC LIMIT 500`).all(),
+    hasRefundCols(env),
+  ]);
+  let jobs = [], printReady = true, printStatus = {}, start = null;
+  try {
+    jobs = (await env.DB.prepare(
+      `SELECT * FROM print_jobs WHERE order_ref IN (SELECT order_ref FROM orders ORDER BY created_at DESC LIMIT 500) ORDER BY line_no, copy_no`
+    ).all()).results;
+    const st = await env.DB.prepare(`SELECT key, value FROM print_settings WHERE key IN ('status','start')`).all();
+    for (const r of st.results) { if (r.key === 'status') printStatus = JSON.parse(r.value || '{}'); else start = r.value; }
+  } catch { printReady = false; } // print tables not set up yet: everything is posted by hand
+  let types = {};
+  try {
+    const res = await fetch(PRODUCTS_URL, { cf: { cacheTtl: 60, cacheEverything: true } });
+    if (res.ok) types = Object.fromEntries((await res.json()).products.map((p) => [p.id, p.type]));
+  } catch {}
+  const byRef = new Map();
+  for (const j of jobs) { if (!byRef.has(j.order_ref)) byRef.set(j.order_ref, []); byRef.get(j.order_ref).push(j); }
+  const orders = results.map((o) => describeOrder(o, byRef.get(o.order_ref) || [], types, printReady, start));
+  return { orders, printReady, printStatus, refunds };
 }
 
-// ============================================================================
-// Printing tab: what the separate savourly-print Worker has sent to Stannp.
-// Reads its tables (print-worker/schema.sql); Retry / Done by hand change one job.
-// ============================================================================
-const PRINT_STATUS = {
-  queued: ['Waiting', 'pending'], proof: ['Proof ready', 'proof'], sent: ['Sent to Stannp', 'paid'],
-  printing: ['Printing', 'paid'], dispatched: ['Posted', 'posted'], local_delivery: ['Out for delivery', 'posted'],
-  delivered: ['Delivered', 'posted'], returned: ['Returned', 'bad'], cancelled: ['Cancelled', 'pending'],
-  needs_attention: ['Needs attention', 'bad'], sending: ['Sending…', 'pending'], done_by_hand: ['Done by hand', 'posted'], no_cards: ['No cards to print', 'pending'],
-};
+// Works out, for one order: its cards' print jobs per line, what (if anything) is posted by hand,
+// one overall status and which filter it belongs to.
+function describeOrder(o, allJobs, types, printReady, start) {
+  let items = [];
+  try { items = JSON.parse(o.items_json || '[]'); } catch {}
+  const paid = o.status === 'paid';
+  const jobs = allJobs.filter((j) => j.status !== 'no_cards');
+  const refunded = pence(o.refunded_amount);
+  const fullyRefunded = refunded > 0 && refunded >= pence(o.total);
+  const active = jobs.filter((j) => j.status !== 'cancelled');
+  const stannp = active.filter((j) => j.status !== 'proof');               // cards Stannp is (or will be) printing for real
+  const proofOnly = active.length > 0 && stannp.length === 0;
+  const hasCards = items.some((it) => !isBoxItem(it, types));
+  const beforePrinting = !printReady || !start || (o.paid_at && o.paid_at < start);
+  const cardsByHand = paid && hasCards && (beforePrinting || proofOnly);
+  const boxes = items.some((it) => isBoxItem(it, types));
+  const byHand = paid && (boxes || cardsByHand);                           // something to post yourself
+  const handPending = byHand && !o.posted_at && !fullyRefunded;
 
-async function printingPage(env, url) {
-  const c = await counts(env);
-  let status = null, jobs = [];
-  try {
-    const st = await env.DB.prepare(`SELECT value FROM print_settings WHERE key='status'`).first();
-    status = st ? JSON.parse(st.value) : {};
-    jobs = (await env.DB.prepare(`SELECT * FROM print_jobs WHERE status != 'no_cards' ORDER BY CASE status WHEN 'needs_attention' THEN 0 WHEN 'queued' THEN 1 ELSE 2 END, id DESC LIMIT 300`).all()).results;
-  } catch {
-    return shell('printing', c, `<section class="group pad"><h2 class="plain">Printing isn't set up yet</h2><p>Run <b>print-worker/schema.sql</b> in Cloudflare → D1 → savourly-orders → Console, then set up the <b>savourly-print</b> Worker (see SETUP.md).</p></section>`);
-  }
-  const s = status || {};
-  const modeLabel = { off: 'Off — nothing is sent', proof: 'Proof only — nothing prints', live: s.stripeLive ? (s.liveOnly ? 'Live for listed emails only (others get proofs)' : 'Live — cards print and post') : 'Live, but Stripe is in test mode — proofs only' }[s.mode] || 'Not run yet';
-  const lastRun = s.lastRun ? new Date(s.lastRun) : null;
-  const stale = !lastRun || Date.now() - lastRun.getTime() > 20 * 60000;
-  const attention = jobs.filter((j) => j.status === 'needs_attention').length;
-  const flash = url.searchParams.get('done');
-  const banners = [
-    flash ? `<div class="flash ok">${escapeHtml(flash)}</div>` : '',
-    url.searchParams.get('err') ? `<div class="flash bad">${escapeHtml(url.searchParams.get('err'))}</div>` : '',
-    stale ? `<div class="flash bad">The print Worker hasn't run ${lastRun ? `since ${escapeHtml(fmtDate(s.lastRun))}` : 'yet'}. Check savourly-print has its Cron Trigger (every 5 minutes).</div>` : '',
-    s.capHit ? `<div class="flash bad">Daily cap reached: ${escapeHtml(`£${Number(s.spent).toFixed(2)} of £${Number(s.cap).toFixed(2)}`)} spent today. Live cards wait until midnight.</div>` : '',
-    attention ? `<div class="flash bad">${attention} card${attention === 1 ? ' needs' : 's need'} attention: see below.</div>` : '',
-    s.mode && s.mode !== 'off' && s.keyReady === false ? `<div class="flash bad">STANNP_MODE is on but the STANNP_API_KEY secret is missing.</div>` : '',
+  let status;
+  if (!paid) status = [o.status === 'pending' ? 'Not paid' : o.status === 'expired' ? 'Checkout abandoned' : o.status, 'pending', 'unpaid'];
+  else if (fullyRefunded) status = ['Refunded', 'refunded', 'refunded'];
+  else if (jobs.some((j) => j.status === 'needs_attention')) status = ['Needs attention', 'bad', 'action'];
+  else if (jobs.some((j) => j.status === 'returned')) status = ['Returned to sender', 'bad', 'action'];
+  else if (handPending) status = [proofOnly && !boxes ? 'Proof only: post by hand' : stannp.length ? 'Box to post by hand' : 'To post by hand', 'paid', 'action'];
+  else if (stannp.length) {
+    const step = Math.min(...stannp.map((j) => STEP[j.status] ?? 0));
+    const [label, cls] = STEP_LABEL[step];
+    status = [label, cls, step >= 4 ? 'posted' : 'progress'];
+  } else if (byHand && o.posted_at) status = [`Posted ${fmtDate(o.posted_at)}`, 'posted', 'posted'];
+  else if (jobs.length && !active.length) status = ['Cards cancelled', 'pending', 'all'];
+  else if (hasCards) status = ['Waiting to print', 'pending', 'progress'];   // paid since printing started; picked up within 5 minutes
+  else status = ['Paid', 'paid', 'action'];
+  return { o, items, jobs, paid, refunded, fullyRefunded, byHand, cardsByHand, handPending, status, types };
+}
+
+async function counts(env, data) {
+  const d = data || await loadOrders(env).catch(() => ({ orders: [] }));
+  const n = { all: 0 };
+  for (const x of d.orders) { if (x.paid) n.all++; n[x.status[2]] = (n[x.status[2]] || 0) + 1; }
+  return { action: n.action || 0, n };
+}
+
+function jobRow(j, f) {
+  const [label, cls] = PRINT_STATUS[j.status] || [j.status, 'pending'];
+  const buttons = [
+    j.status === 'needs_attention' ? `<button class="btn btn-xs" name="do" value="retry">Retry</button><button class="btn-ghost btn-xs" name="do" value="hand">Done by hand</button>` : '',
+    canCancel(j) ? `<button class="btn-ghost btn-xs btn-stop" name="do" value="cancel" onclick="return confirm('Cancel this card${j.status === 'sent' ? ' in Stannp' : ''}? It won\\'t be printed or posted.')">Cancel card</button>` : '',
   ].join('');
-  const head = `<section class="group pad">
-      <h2 class="plain">Stannp printing</h2>
-      <p><b>Switch:</b> ${escapeHtml(modeLabel)}${s.mode === 'live' ? ` · <b>Today:</b> £${Number(s.spent || 0).toFixed(2)} of £${Number(s.cap || 20).toFixed(2)} cap` : ''}</p>
-      <p class="hint">Last checked ${lastRun ? escapeHtml(fmtDate(s.lastRun)) : 'never'} · alert emails ${s.emailReady ? 'on' : 'not set up'} · change the switch in Cloudflare → savourly-print → Settings → Variables (STANNP_MODE: off / proof / live).</p>
-    </section>`;
-  const rows = jobs.map((j) => {
-    const [label, cls] = PRINT_STATUS[j.status] || [j.status, 'pending'];
-    const cancelBtn = canCancel(j) ? `<button class="btn-ghost btn-stop" name="do" value="cancel" onclick="return confirm('Cancel this card${j.status === 'sent' ? ' in Stannp' : ''}? It won\\'t be printed or posted.')">Cancel card</button>` : '';
-    const actions = j.status === 'needs_attention' || cancelBtn
-      ? `<form method="post" action="/printjob" class="pj"><input type="hidden" name="id" value="${Number(j.id)}">${j.status === 'needs_attention' ? `<button class="btn" name="do" value="retry">Retry</button><button class="btn-ghost" name="do" value="hand">Done by hand</button>` : ''}${cancelBtn}</form>`
-      : j.status === 'sending' ? `<p class="hint pj">Being sent to Stannp right now. Refresh in a minute to cancel it.</p>` : '';
-    return `<article class="order pjob">
-      <div class="top"><strong class="ref">${escapeHtml(j.order_ref)}</strong><span class="dim">card ${Number(j.line_no)} · copy ${Number(j.copy_no)}</span><span class="pill pill-${cls}">${escapeHtml(label)}</span></div>
-      <div class="pmain">${j.product_id ? idTag(j.product_id) : ''}${escapeHtml(j.style ? `${j.product_name || ''} — ${j.style}` : j.product_name || '')}${pdfLink(j.product_id, j.style)}</div>
-      <div class="pmeta">${j.mode ? `<span>${j.mode === 'live' ? 'Live' : 'Proof'}${j.cost != null ? ` · £${Number(j.cost).toFixed(2)}` : ''}</span>` : ''}${/^https:\/\//.test(j.proof_url || '') ? `<a href="${escapeHtml(j.proof_url)}" target="_blank" rel="noopener">Stannp proof ↗</a>` : ''}${j.sent_at ? `<span class="dim">${escapeHtml(fmtDate(j.sent_at))}</span>` : ''}</div>
-      ${j.last_error ? `<div class="${j.status === 'cancelled' || j.status === 'no_cards' ? 'pnote' : 'perr'}">${escapeHtml(j.last_error)}</div>` : ''}${actions}
-    </article>`;
+  const meta = [
+    j.mode ? `${j.mode === 'live' ? 'Live' : 'Proof'}${j.cost != null ? ` £${Number(j.cost).toFixed(2)}` : ''}` : '',
+    /^https:\/\//.test(j.proof_url || '') ? `<a href="${escapeHtml(j.proof_url)}" target="_blank" rel="noopener">proof ↗</a>` : '',
+  ].filter(Boolean).join(' · ');
+  return `<div class="job">
+      <span class="pill pill-${cls}">${escapeHtml(label)}</span>${meta ? `<span class="dim">${meta}</span>` : ''}
+      ${buttons ? `<form method="post" action="/printjob" class="jbtns"><input type="hidden" name="id" value="${Number(j.id)}"><input type="hidden" name="f" value="${escapeHtml(f)}">${buttons}</form>` : ''}
+      ${j.status === 'sending' ? '<span class="dim">refresh in a minute to cancel</span>' : ''}
+      ${j.last_error ? `<div class="${j.status === 'cancelled' ? 'pnote' : 'perr'}">${escapeHtml(j.last_error)}</div>` : ''}
+    </div>`;
+}
+
+function orderCard(x, f) {
+  const { o, items, jobs, paid, refunded, fullyRefunded, byHand, cardsByHand, status, types } = x;
+  const ref = escapeHtml(o.order_ref);
+  const lines = items.map((it, idx) => {
+    const lineJobs = jobs.filter((j) => j.line_no === idx + 1);
+    const box = isBoxItem(it, types);
+    const copies = lineJobs.length > 1;
+    const handPill = (todo, done) => `<div class="job"><span class="pill pill-${o.posted_at ? 'posted' : 'hand'}">${o.posted_at ? done : todo}</span></div>`;
+    const printInfo = !paid ? ''
+      : box ? handPill('Box: post by hand', 'Box: posted by hand')
+      : lineJobs.length ? lineJobs.map((j) => (copies ? `<div class="copy">Copy ${Number(j.copy_no)}</div>` : '') + jobRow(j, f)).join('')
+      : cardsByHand ? handPill('Post by hand', 'Posted by hand')
+      : '<div class="job"><span class="pill pill-pending">Waiting to print</span></div>';
+    return `<li><div class="iline"><span>${it.id ? idTag(it.id) : ''}${escapeHtml(it.style ? `${it.name} — ${it.style}` : it.name)}${pdfLink(it.id, it.style)}</span><b>× ${Number(it.qty)}</b></div>${printInfo}</li>`;
   }).join('');
-  return shell('printing', c, banners + head + (rows || '<div class="empty">No cards sent to Stannp yet. Only orders paid after printing was set up are picked up.</div>'));
+  const stripe = o.stripe_payment_intent
+    ? `<a href="https://dashboard.stripe.com/test/payments/${encodeURIComponent(o.stripe_payment_intent)}" target="_blank" rel="noopener">View in Stripe ↗</a>` : '';
+  const refundBtn = paid && o.stripe_payment_intent && !fullyRefunded
+    ? `<a class="btn-ghost btn-sm" href="/refund?ref=${encodeURIComponent(o.order_ref)}&amp;f=${escapeHtml(f)}">Refund</a>` : '';
+  const postBtn = paid && byHand && !(fullyRefunded && !o.posted_at)
+    ? `<form method="post" action="/${o.posted_at ? 'unpost' : 'post'}"><input type="hidden" name="ref" value="${ref}"><input type="hidden" name="f" value="${escapeHtml(f)}">
+         <button class="${o.posted_at ? 'btn-ghost btn-sm' : 'btn btn-sm'}">${o.posted_at ? 'Undo posted' : 'Mark as posted'}</button></form>` : '';
+  const refundBadge = refunded ? `<span class="pill pill-refunded">${fullyRefunded ? 'Refunded' : `Refunded ${gbp(refunded)}`}</span>` : '';
+  return `<article class="order" id="o-${ref}">
+      <div class="top"><strong class="ref">${ref}<button type="button" class="cp" data-copy="${ref}" title="Copy ${ref}" aria-label="Copy ${ref}"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg></button></strong><span class="dim">${escapeHtml(fmtDate(o.created_at))}</span><span class="pill pill-${status[1]}">${escapeHtml(status[0])}</span>${status[1] === 'refunded' ? '' : refundBadge}</div>
+      <ul class="items">${lines}</ul>
+      <div class="addr"><b>${escapeHtml(o.customer_name)}</b><br>${escapeHtml(o.shipping_address)}<br><span class="dim">${escapeHtml(o.customer_email)}</span></div>
+      <div class="foot"><span class="total">£${Number(o.total).toFixed(2)}</span>${stripe}${refundBtn}${postBtn}</div>
+    </article>`;
+}
+
+async function ordersPage(env, url) {
+  const data = await loadOrders(env);
+  const c = await counts(env, data);
+  const f = filterKey(url.searchParams.get('f'));
+  const s = data.printStatus || {};
+  const flashOk = url.searchParams.get('done'), flashErr = url.searchParams.get('err');
+  const lastRun = s.lastRun ? new Date(s.lastRun) : null;
+  const modeLabel = { off: 'Off: nothing is sent to Stannp', proof: 'Proof only: nothing prints', live: s.stripeLive ? (s.liveOnly ? 'Live for listed emails only (others get proofs)' : 'Live: cards print and post') : 'Live, but Stripe is in test mode: proofs only' }[s.mode] || 'Not run yet';
+  const attention = data.orders.filter((x) => x.status[0] === 'Needs attention').length;
+  const banners = [
+    flashOk ? `<div class="flash ok">${escapeHtml(flashOk)}</div>` : '',
+    flashErr ? `<div class="flash bad">${escapeHtml(flashErr)}</div>` : '',
+    data.printReady && (!lastRun || Date.now() - lastRun.getTime() > 20 * 60000)
+      ? `<div class="flash bad">The print Worker hasn't run ${lastRun ? `since ${escapeHtml(fmtDate(s.lastRun))}` : 'yet'}. Check savourly-print has its Cron Trigger (every 5 minutes).</div>` : '',
+    s.capHit ? `<div class="flash bad">Daily print cap reached: £${Number(s.spent).toFixed(2)} of £${Number(s.cap).toFixed(2)} today. Live cards wait until midnight.</div>` : '',
+    attention ? `<div class="flash bad">${plural(attention, 'order needs', 'orders need')} attention: <a href="/?view=orders&amp;f=action">see Needs action</a>.</div>` : '',
+    s.mode && s.mode !== 'off' && s.keyReady === false ? `<div class="flash bad">STANNP_MODE is on but savourly-print has no STANNP_API_KEY.</div>` : '',
+  ].join('');
+  const panel = data.printReady
+    ? `<div class="pstat"><b>Stannp:</b> ${escapeHtml(modeLabel)}${s.mode === 'live' ? ` · today £${Number(s.spent || 0).toFixed(2)} of £${Number(s.cap || 20).toFixed(2)}` : ''} <span class="dim">· checked ${lastRun ? escapeHtml(fmtDate(s.lastRun)) : 'never'}</span></div>`
+    : `<div class="pstat"><b>Stannp printing isn't set up yet</b>, so everything is posted by hand. <span class="dim">See SETUP.md → Printing with Stannp.</span></div>`;
+  const chips = `<nav class="chips">${FILTERS.map(([k, label]) => {
+    const n = k === 'all' ? c.n.all : c.n[k] || 0;
+    return `<a class="chip ${f === k ? 'on' : ''} ${k === 'action' && n ? 'warn' : ''}" href="/?view=orders&amp;f=${k}">${label} <span>${n}</span></a>`;
+  }).join('')}</nav>`;
+  const shown = data.orders.filter((x) => (f === 'all' ? x.paid : x.status[2] === f));
+  const empty = { all: 'No paid orders yet.', action: 'Nothing needs you right now. 🎉', progress: 'Nothing is printing right now.', posted: 'Nothing posted yet.', refunded: 'No refunds.', unpaid: 'No unpaid checkouts.' }[f];
+  return shell('orders', c, banners + panel + chips + (shown.map((x) => orderCard(x, f)).join('') || `<div class="empty">${empty}</div>`));
 }
 
 // ---- Cancelling a card ----
@@ -442,7 +531,8 @@ async function printJobAction(request, env) {
   const id = Number(form.get('id'));
   const action = form.get('do');
   if (!Number.isInteger(id) || !['retry', 'hand', 'cancel'].includes(action)) return new Response('Bad request', { status: 400 });
-  const back = (key, msg) => Response.redirect(new URL(`/?view=printing&${key}=${encodeURIComponent(msg)}`, request.url).toString(), 303);
+  const f = filterKey(form.get('f'));
+  const back = (key, msg) => Response.redirect(new URL(`/?view=orders&f=${f}&${key}=${encodeURIComponent(msg)}`, request.url).toString(), 303);
   if (action === 'cancel') {
     const j = await env.DB.prepare(`SELECT * FROM print_jobs WHERE id=?`).bind(id).first();
     if (!j) return back('err', 'That card no longer exists.');
@@ -483,9 +573,10 @@ const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
 async function refundPage(env, url) {
   const c = await counts(env);
   const ref = String(url.searchParams.get('ref') || '');
-  const view = VIEWS[url.searchParams.get('view')] ? url.searchParams.get('view') : 'all';
+  const f = filterKey(url.searchParams.get('f'));
+  const view = 'orders';
   const o = await env.DB.prepare(`SELECT * FROM orders WHERE order_ref=?`).bind(ref).first();
-  const box = (inner) => shell(view, c, `<section class="group pad refund">${inner}<p><a href="/?view=${view}">← Back to orders</a></p></section>`);
+  const box = (inner) => shell(view, c, `<section class="group pad refund">${inner}<p><a href="/?view=orders&amp;f=${f}">← Back to orders</a></p></section>`);
   if (!o) return box(`<h2 class="plain">Order not found</h2>`);
   if (o.status !== 'paid' || !o.stripe_payment_intent) return box(`<h2 class="plain">${escapeHtml(ref)} can't be refunded here</h2><p>It isn't a paid order with a Stripe payment.</p>`);
   const remaining = pence(o.total) - pence(o.refunded_amount);
@@ -509,12 +600,12 @@ async function refundPage(env, url) {
     <ul class="items">${items.map((i) => `<li><span>${i.id ? idTag(i.id) : ''}${escapeHtml(i.style ? `${i.name} — ${i.style}` : i.name)}</span><b>× ${Number(i.qty)}</b></li>`).join('')}</ul>
     ${already}
     <form method="post" action="/refund" id="rf">
-      <input type="hidden" name="ref" value="${escapeHtml(ref)}"><input type="hidden" name="view" value="${escapeHtml(view)}"><input type="hidden" name="token" value="${token}">
+      <input type="hidden" name="ref" value="${escapeHtml(ref)}"><input type="hidden" name="f" value="${escapeHtml(f)}"><input type="hidden" name="token" value="${token}">
       <label class="fld">Amount to refund (£)<input type="number" name="amount" id="amt" step="0.01" min="0.01" max="${(remaining / 100).toFixed(2)}" value="${(remaining / 100).toFixed(2)}" inputmode="decimal" required></label>
       <p class="hint">Full amount left: ${gbp(remaining)}. Lower it for a partial refund.</p>
       ${stoppable.length ? `<label class="chk"><input type="checkbox" name="cancel" value="1" checked> Cancel the ${plural(stoppable.length, 'card', 'cards')} that ${stoppable.length === 1 ? 'hasn’t' : 'haven’t'} printed yet</label>` : ''}
       ${cards ? `<ul class="notes">${cards}</ul>` : '<p class="hint">No cards for this order have gone to Stannp.</p>'}
-      <div class="pj"><button class="btn btn-stop" id="go">Refund ${gbp(remaining)}</button><a class="btn-ghost" href="/?view=${view}">Back</a></div>
+      <div class="pj"><button class="btn btn-stop" id="go">Refund ${gbp(remaining)}</button><a class="btn-ghost" href="/?view=orders&amp;f=${f}">Back</a></div>
       <p class="hint">The money goes back to the customer's card through Stripe (usually 5–10 days to show). This can't be undone.</p>
     </form>
     <script>
@@ -535,9 +626,9 @@ async function refundAction(request, env) {
   if (origin && origin !== new URL(request.url).origin) return new Response('Forbidden', { status: 403 });
   const form = await request.formData();
   const ref = String(form.get('ref') || '');
-  const view = VIEWS[form.get('view')] ? form.get('view') : 'all';
+  const f = filterKey(form.get('f'));
   const token = String(form.get('token') || '');
-  const back = (key, msg) => Response.redirect(new URL(`/?view=${view}&${key}=${encodeURIComponent(msg)}`, request.url).toString(), 303);
+  const back = (key, msg) => Response.redirect(new URL(`/?view=orders&f=${f}&${key}=${encodeURIComponent(msg)}`, request.url).toString(), 303);
   if (!/^[a-f0-9]{24}$/.test(token)) return new Response('Bad request', { status: 400 });
 
   const o = await env.DB.prepare(`SELECT * FROM orders WHERE order_ref=?`).bind(ref).first();
@@ -584,52 +675,9 @@ async function refundAction(request, env) {
   return back('done', `Refunded ${gbp(amount)} on ${ref}${left > 0 ? ` (${gbp(left)} left)` : ''}. ${notes.join(' ')}`.trim());
 }
 
-async function page(env, view, url) {
-  const v = VIEWS[view] || VIEWS.topost;
-  const refunds = await hasRefundCols(env);
-  const { results } = await env.DB.prepare(`SELECT * FROM orders WHERE ${v.where}${refunds && v.refundWhere ? v.refundWhere : ''} ORDER BY ${v.order} LIMIT 500`).all();
-  const c = await counts(env);
-  const flash = (url && url.searchParams.get('done')) ? `<div class="flash ok">${escapeHtml(url.searchParams.get('done'))}</div>`
-    : (url && url.searchParams.get('err')) ? `<div class="flash bad">${escapeHtml(url.searchParams.get('err'))}</div>` : '';
-
-  const cards = results.map((o) => {
-    const items = JSON.parse(o.items_json || '[]');
-    const posted = !!o.posted_at;
-    const paid = o.status === 'paid';
-    const stripe = o.stripe_payment_intent
-      ? `<a href="https://dashboard.stripe.com/test/payments/${encodeURIComponent(o.stripe_payment_intent)}" target="_blank" rel="noopener">View in Stripe ↗</a>`
-      : '';
-    const refunded = pence(o.refunded_amount);
-    const fullyRefunded = refunded > 0 && refunded >= pence(o.total);
-    const refundBtn = paid && o.stripe_payment_intent && !fullyRefunded
-      ? `<a class="btn-ghost btn-sm" href="/refund?ref=${encodeURIComponent(o.order_ref)}&amp;view=${escapeHtml(view)}">Refund</a>` : '';
-    const action = paid && !(fullyRefunded && !posted)
-      ? `<form method="post" action="/${posted ? 'unpost' : 'post'}">
-           <input type="hidden" name="ref" value="${escapeHtml(o.order_ref)}">
-           <input type="hidden" name="view" value="${escapeHtml(view)}">
-           <button class="${posted ? 'btn-ghost' : 'btn'}">${posted ? 'Undo posted' : 'Mark as posted'}</button>
-         </form>`
-      : '';
-    const badge = !paid
-      ? `<span class="pill pill-${escapeHtml(o.status)}">${o.status === 'pending' ? 'Not paid' : escapeHtml(o.status)}</span>`
-      : posted ? `<span class="pill pill-posted">Posted ${escapeHtml(fmtDate(o.posted_at))}</span>` : `<span class="pill pill-paid">Paid</span>`;
-    const refundBadge = refunded ? `<span class="pill pill-refunded">${fullyRefunded ? 'Refunded' : `Refunded ${gbp(refunded)}`}</span>` : '';
-
-    return `<article class="order">
-      <div class="top"><strong class="ref">${escapeHtml(o.order_ref)}<button type="button" class="cp" data-copy="${escapeHtml(o.order_ref)}" title="Copy ${escapeHtml(o.order_ref)}" aria-label="Copy ${escapeHtml(o.order_ref)}"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg></button></strong><span class="dim">${escapeHtml(fmtDate(o.created_at))}</span>${badge}${refundBadge}</div>
-      <ul class="items">${items.map((i) => `<li><span>${i.id ? idTag(i.id) : ''}${escapeHtml(i.style ? `${i.name} — ${i.style}` : i.name)}${pdfLink(i.id, i.style)}</span><b>× ${Number(i.qty)}</b></li>`).join('')}</ul>
-      <div class="addr"><b>${escapeHtml(o.customer_name)}</b><br>${escapeHtml(o.shipping_address)}<br><span class="dim">${escapeHtml(o.customer_email)}</span></div>
-      <div class="foot"><span class="total">£${Number(o.total).toFixed(2)}</span>${stripe}${refundBtn}${action}</div>
-    </article>`;
-  }).join('');
-
-  const empty = view === 'topost' ? 'Nothing waiting to be posted. 🎉' : 'No orders here yet.';
-  return shell(view, c, flash + (cards || `<div class="empty">${empty}</div>`));
-}
-
 function tabs(view, c) {
-  const t = (key, label, n) => `<a class="tab ${view === key ? 'on' : ''}" href="/?view=${key}">${label}${n == null ? '' : ` <span>${n}</span>`}</a>`;
-  return t('topost', 'To post', c.topost) + t('posted', 'Posted', c.posted) + t('all', 'All', c.all) + t('printing', 'Printing', c.attention || null) + t('products', 'Products', c.products) + t('reports', 'Reports');
+  const t = (key, label, n, cls = '') => `<a class="tab ${view === key ? 'on' : ''}" href="/?view=${key}">${label}${n == null ? '' : ` <span class="${cls}">${n}</span>`}</a>`;
+  return t('orders', 'Orders', c.action || null, 'bad') + t('products', 'Products', c.products) + t('reports', 'Reports');
 }
 
 function shell(view, c, body) {
@@ -735,11 +783,33 @@ function shell(view, c, body) {
   .refund .notes{margin:10px 0 0;padding-left:20px;font-size:.9rem;line-height:1.5}
   .refund .pj{margin-top:16px;align-items:center}
   .refund .pj a{text-decoration:none}
+  /* Orders tab */
+  .pstat{font-size:.88rem;color:#20293a;padding:2px 2px 0}
+  .chips{display:flex;gap:6px;flex-wrap:wrap}
+  .chip{padding:6px 12px;border-radius:99px;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.06);text-decoration:none;color:#6b7280;font-size:.85rem;font-weight:600;white-space:nowrap}
+  .chip span{background:#f3efe6;border-radius:99px;padding:0 7px;margin-left:3px;font-size:.75rem}
+  .chip.on{background:#20293a;color:#fff}
+  .chip.on span{background:rgba(255,255,255,.2)}
+  .chip.warn span{background:#fee2e2;color:#991b1b}
+  .tab span.bad{background:#fee2e2;color:#991b1b}
+  .order .items li{display:block}
+  .iline{display:flex;justify-content:space-between;gap:12px}
+  .iline b{white-space:nowrap}
+  .job{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin:6px 0 2px;font-size:.82rem}
+  .job .pill{margin-left:0}
+  .job .perr,.job .pnote{flex-basis:100%;margin-top:2px}
+  .copy{font-size:.75rem;color:#9ca3af;margin-top:6px}
+  .jbtns{display:inline-flex;gap:6px;margin:0}
+  .btn-xs{padding:5px 10px !important;font-size:.78rem !important;border-radius:7px}
+  .pill-hand{background:#fff7ed;color:#9a3412}
+  .foot form{margin:0}
+  .foot .btn-sm{display:inline-block}
+  .btn.btn-sm{color:#fff !important}
   /* Orders views: wide, one thin row per order on bigger screens */
   .v-orders main{max-width:1280px}
   @media (min-width:900px){
     .v-orders main{gap:8px}
-    .v-orders .order{display:grid;grid-template-columns:150px minmax(0,1fr) 280px 190px;gap:24px;align-items:center;padding:10px 18px}
+    .v-orders .order{display:grid;grid-template-columns:170px minmax(0,1fr) 250px 200px;gap:24px;align-items:center;padding:12px 18px}
     .v-orders .top{flex-direction:column;align-items:flex-start;gap:2px}
     .v-orders .pill{margin-left:0}
     .v-orders .items{margin:0;border-top:0}
@@ -749,7 +819,7 @@ function shell(view, c, body) {
     .v-orders .foot form{margin-left:0}
     .v-orders .btn,.v-orders .btn-ghost{padding:8px 12px;font-size:.85rem}
   }
-</style></head><body class="${view === 'products' || view === 'reports' || view === 'printing' ? 'v-products' : 'v-orders'}">
+</style></head><body class="${view === 'products' || view === 'reports' ? 'v-products' : 'v-orders'}">
 <header><h1>Savourly orders</h1><nav class="tabs">${tabs(view, c)}</nav></header>
 <main>${body}</main>
 <script>
@@ -844,10 +914,10 @@ async function setPosted(request, env, posted) {
   if (origin && origin !== new URL(request.url).origin) return new Response('Forbidden', { status: 403 });
   const form = await request.formData();
   const ref = String(form.get('ref') || '');
-  const view = VIEWS[form.get('view')] ? form.get('view') : 'topost';
+  const f = filterKey(form.get('f'));
   await env.DB.prepare(`UPDATE orders SET posted_at=? WHERE order_ref=? AND status='paid'`)
     .bind(posted ? new Date().toISOString() : null, ref).run();
-  return Response.redirect(new URL(`/?view=${view}`, request.url).toString(), 303);
+  return Response.redirect(new URL(`/?view=orders&f=${f}#o-${encodeURIComponent(ref)}`, request.url).toString(), 303);
 }
 
 // Streams a print PDF from the private repo. Only reachable through Cloudflare Access (see fetch()).
@@ -963,11 +1033,12 @@ export default {
       catch (e) { return Response.redirect(new URL('/?view=reports&err=' + encodeURIComponent(e.message), url).toString(), 303); }
     }
     if (request.method === 'GET' && url.pathname === '/') {
-      const view = url.searchParams.get('view') || 'topost';
+      const view = url.searchParams.get('view') || 'orders';
       if (view === 'products') return productsPage(env);
       if (view === 'reports') return reportsPage(env, url);
-      if (view === 'printing') return printingPage(env, url);
-      return page(env, view, url);
+      const old = { topost: 'action', posted: 'posted', all: 'all', printing: 'all' }[view]; // old bookmarks
+      if (old) return Response.redirect(new URL(`/?view=orders&f=${old}`, url).toString(), 302);
+      return ordersPage(env, url);
     }
     return new Response('Not found', { status: 404 });
   },

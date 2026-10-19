@@ -106,7 +106,7 @@ async function alertOnce(env, key, subject, text) {
       to: env.ALERT_TO,
       from: env.ALERT_FROM || 'alerts@savourlyco.com',
       subject: `Savourly printing: ${subject}`,
-      text: `${text}\n\nOrder log → Printing tab: https://savourly-admin.shelts-tom.workers.dev/?view=printing`,
+      text: `${text}\n\nOrder log → Printing tab: https://savourly-admin.shelts-tom.workers.dev/?view=orders&f=action`,
     });
     return true;
   } catch (e) { console.error('Alert email failed:', e && e.message); return false; }
